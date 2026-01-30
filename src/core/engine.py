@@ -58,8 +58,10 @@ class Engine:
     async def run_cycle(self):
         logger.info("🚀 Starting Signal Hunter Cycle...")
         
-        # 每次循环创建新的数据库连接
+        # Initialize async database
         db = Database()
+        await db.init_tables()
+        
         try:
             # 1. Fetch & Process
             tasks = []
@@ -68,12 +70,12 @@ class Engine:
             
             results = await asyncio.gather(*tasks, return_exceptions=True)
             
-            # Flatten results and save to DB
+            # Flatten results and save to DB (async)
             for res in results:
                 if isinstance(res, list):
                     for sig in res:
                         self.current_batch_signals.append(sig)
-                        db.save_signal(sig)
+                        await db.save_signal(sig)
             
             # 2. Resonance Detection (using DB history)
             alert_count = await self._detect_resonance_with_db(db)
@@ -82,8 +84,11 @@ class Engine:
                 logger.info("✅ No new resonance found.")
             
             logger.info("🏁 Cycle complete.")
+        except Exception as e:
+            logger.exception(f"Cycle failed: {e}")
+            raise
         finally:
-            db.close()
+            await db.close()
 
     async def _process_source(self, source: Source) -> List[Signal]:
         try:
@@ -100,8 +105,8 @@ class Engine:
         Check for resonance: >= 2 sources mentioning the same ticker in the LAST 24 HOURS.
         Returns number of alerts sent.
         """
-        # Load signals from DB (24h window)
-        recent_signals = db.get_recent_signals(hours=24)
+        # Load signals from DB (24h window) - async
+        recent_signals = await db.get_recent_signals(hours=24)
         
         ticker_counts: Dict[str, List[Signal]] = {}
         alerts_sent = 0
@@ -113,8 +118,9 @@ class Engine:
             
         # Check threshold
         for ticker, sigs in ticker_counts.items():
-            # Check if we already alerted this ticker recently
-            if db.is_alerted_recently(ticker):
+            # Check if we already alerted this ticker recently - async
+            is_alerted = await db.is_alerted_recently(ticker)
+            if is_alerted:
                 logger.debug(f"🤫 Suppressing alert for {ticker} (already sent in last 24h)")
                 continue
 
@@ -136,7 +142,7 @@ class Engine:
                 msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
                 
                 await send_telegram_alert(msg)
-                db.record_alert(ticker) # Record alert to prevent dupes
+                await db.record_alert(ticker)  # Record alert - async
                 alerts_sent += 1
             else:
                 logger.debug(f"ℹ️ {ticker} mentioned by {len(sources_involved)} source(s). No resonance.")

@@ -49,12 +49,12 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     db = Database()
     try:
-        recent_signals = db.get_recent_signals(hours=24)
+        recent_signals = await db.get_recent_signals(hours=24)
         signal_count = len(recent_signals)
     except Exception as e:
         signal_count = f"Error: {e}"
     finally:
-        db.close()
+        await db.close()
 
     msg = f"📊 *System Status*\n"
     msg += f"------------------\n"
@@ -70,7 +70,7 @@ async def digest_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     db = Database()
     try:
-        signals = db.get_recent_signals(hours=24)
+        signals = await db.get_recent_signals(hours=24)
         
         if not signals:
             await context.bot.send_message(chat_id=update.effective_chat.id, text="📭 No signals or activity recorded in the last 24 hours.")
@@ -93,7 +93,7 @@ async def digest_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.exception("Digest generation failed")
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to generate digest: {e}")
     finally:
-        db.close()
+        await db.close()
 
 async def scan_job(context: ContextTypes.DEFAULT_TYPE):
     global last_scan_time, is_scanning
