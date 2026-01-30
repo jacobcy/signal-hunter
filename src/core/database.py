@@ -1,5 +1,4 @@
 import aiosqlite
-import json
 from datetime import datetime, timedelta
 from typing import List, Optional
 from loguru import logger
@@ -10,18 +9,10 @@ DB_PATH = "memory/signals.db"
 class Database:
     """Async SQLite database manager using aiosqlite."""
     
-    def __init__(self):
-        self.db_path = DB_PATH
-    
-    async def _get_connection(self):
-        """Create and return async database connection."""
-        conn = await aiosqlite.connect(self.db_path)
-        conn.row_factory = aiosqlite.Row
-        return conn
-    
     async def init_tables(self):
         """Initialize database tables."""
-        async with await self._get_connection() as conn:
+        async with aiosqlite.connect(DB_PATH) as conn:
+            conn.row_factory = aiosqlite.Row
             # Signals Table
             await conn.execute('''
                 CREATE TABLE IF NOT EXISTS signals (
@@ -49,8 +40,9 @@ class Database:
     async def save_signal(self, signal: Signal) -> bool:
         """Save signal to database. Returns True if saved, False if duplicate."""
         try:
-            async with await self._get_connection() as conn:
-                # Check for duplicates (same ticker, source, within 1 hour)
+            async with aiosqlite.connect(DB_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
+                # Check for duplicates
                 cursor = await conn.execute('''
                     SELECT id FROM signals 
                     WHERE ticker = ? AND source_name = ? 
@@ -84,7 +76,8 @@ class Database:
     async def get_recent_signals(self, hours: int = 24) -> List[Signal]:
         """Get signals from last N hours."""
         try:
-            async with await self._get_connection() as conn:
+            async with aiosqlite.connect(DB_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
                 time_threshold = datetime.now() - timedelta(hours=hours)
                 
                 cursor = await conn.execute('''
@@ -114,7 +107,8 @@ class Database:
     async def is_alerted_recently(self, ticker: str, hours: int = 24) -> bool:
         """Check if ticker was alerted recently."""
         try:
-            async with await self._get_connection() as conn:
+            async with aiosqlite.connect(DB_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
                 time_threshold = datetime.now() - timedelta(hours=hours)
                 cursor = await conn.execute('''
                     SELECT id FROM alerts 
@@ -128,7 +122,7 @@ class Database:
     async def record_alert(self, ticker: str) -> None:
         """Record that alert was sent for ticker."""
         try:
-            async with await self._get_connection() as conn:
+            async with aiosqlite.connect(DB_PATH) as conn:
                 await conn.execute(
                     'INSERT INTO alerts (ticker, timestamp) VALUES (?, ?)',
                     (ticker, datetime.now())
@@ -138,5 +132,5 @@ class Database:
             logger.error(f"Error recording alert: {e}")
     
     async def close(self):
-        """Cleanup (no-op for aiosqlite async context managers)."""
-        pass  # Connections auto-close with async context managers
+        """Cleanup (no-op for aiosqlite - connections auto-close)."""
+        pass
