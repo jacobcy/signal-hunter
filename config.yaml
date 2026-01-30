@@ -1,0 +1,91 @@
+# Signal Hunter 自定义配置文件
+# 修改此文件后，重启 bot_runner.py 即可生效
+
+# Telegram 配置
+telegram:
+  bot_token: "8413946900:AAHQY7dL13YnHYFMj6mgJKKh8dCoLhsvkM8"  # 从 .env 读取，这里只是示例
+  channel_id: "-1002340655079"  # 频道ID（从 .env 读取）
+  admin_chat_id: "909643416"    # 管理员私聊ID
+
+# 扫描频率（分钟）
+scheduler:
+  interval_minutes: 60          # 每小时扫描一次
+  first_run_delay_seconds: 10   # 启动后10秒开始第一次扫描
+
+# 数据源配置
+sources:
+  # 格式：名称 | 网址 | 平台 | 权重(1-10)
+  list:
+    - name: "Vista"
+      url: "https://x.com/vista8"
+      platform: "twitter"
+      weight: 1.0
+    - name: "QingQ"
+      url: "https://x.com/QingQ77"
+      platform: "twitter"
+      weight: 1.0
+    - name: "Orange"
+      url: "https://x.com/oran_ge"
+      platform: "twitter"
+      weight: 1.0
+    - name: "FuSheng"
+      url: "https://x.com/FuSheng_0306"
+      platform: "twitter"
+      weight: 1.0
+
+# 信号处理配置
+signal_processing:
+  # 关键词黑名单（防止误报）
+  blacklist:
+    - "API"
+    - "GUI"
+    - "CLI"
+    - "GPT"
+    - "LLM"
+    - "SDK"
+    - "HTTP"
+    - "WWW"
+  
+  # 关键词权重（用于情绪判断）
+  keywords:
+    bullish: ["买入", "看多", "加仓", "突破", "目标价", "起飞", "buy", "long", "moon"]
+    bearish: ["卖出", "看空", "减仓", "跌破", "止损", "崩盘", "sell", "short", "dump"]
+
+# AI 摘要配置
+ai_summary:
+  enabled: true
+  provider: "deepseek"  # deepseek / openai
+  model: "deepseek-chat"
+  max_tokens: 1000
+  temperature: 0.7
+  system_prompt: |
+    你是一个专业的金融情报分析师。请阅读以下来自不同博主的推文/新闻片段，为我生成一份简明扼要的【情报日报】。
+    要求：
+    1. 按话题分类（如 AI, Crypto, Macro, Tech 等）。
+    2. 重点标注明确的观点（看多/看空/新发布/吐槽）。
+    3. 去除重复和无关废话（如打招呼、广告）。
+    4. 使用中文，风格专业干练，使用 emoji 增加可读性。
+    5. 只要摘要，不要废话开头。
+
+# 通知配置
+notifications:
+  # 共振报警阈值（多少个独立信源提及同一标的）
+  resonance_threshold: 2
+  # 24小时内不再重复报警同一标的
+  deduplication_hours: 24
+
+# 日志配置
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/bot.log"
+  max_size: "10 MB"
+  backup_count: 7
+
+# 高级配置（一般不需要修改）
+advanced:
+  # HTTP 请求超时（秒）
+  http_timeout: 10
+  # 数据库路径
+  database_path: "memory/signals.db"
+  # 优雅关闭等待时间（秒）
+  graceful_shutdown_timeout: 5
