@@ -57,10 +57,13 @@ class Engine:
 
     async def run_cycle(self):
         logger.info("🚀 Starting Signal Hunter Cycle...")
+        logger.debug("Creating Database instance...")
         
         # Initialize async database
         db = Database()
+        logger.debug("Initializing database tables...")
         await db.init_tables()
+        logger.debug("Database initialized successfully")
         
         try:
             # 1. Fetch & Process
@@ -71,11 +74,16 @@ class Engine:
             results = await asyncio.gather(*tasks, return_exceptions=True)
             
             # Flatten results and save to DB (async)
+            logger.debug(f"Processing {len(results)} fetch results...")
             for res in results:
                 if isinstance(res, list):
                     for sig in res:
                         self.current_batch_signals.append(sig)
-                        await db.save_signal(sig)
+                        logger.debug(f"Saving signal: {sig.ticker} from {sig.source_name}")
+                        saved = await db.save_signal(sig)
+                        logger.debug(f"Signal saved: {saved}")
+                elif isinstance(res, Exception):
+                    logger.error(f"Fetch error: {res}")
             
             # 2. Resonance Detection (using DB history)
             alert_count = await self._detect_resonance_with_db(db)
