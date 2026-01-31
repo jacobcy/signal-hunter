@@ -130,7 +130,25 @@ policy:
 
 ## HR Commands
 
-### 1. Onboard New AI Member
+### 1. Discover New Skills (Skill Discovery)
+```bash
+# HR discovers skills by category
+cd /Users/Jacob/clawd && .venv/bin/python skills/skill-manager/skill_discovery.py --category "Finance"
+
+# HR searches skills by keyword
+cd /Users/Jacob/clawd && .venv/bin/python skills/skill-manager/skill_discovery.py --keyword "test"
+
+# HR lists all available categories
+cd /Users/Jacob/clawd && .venv/bin/python skills/skill-manager/skill_discovery.py --list-categories
+
+# HR gets recommendations for a role
+cd /Users/Jacob/clawd && .venv/bin/python skills/skill-manager/skill_discovery.py --recommend analyst
+
+# HR generates discovery report
+cd /Users/Jacob/clawd && .venv/bin/python skills/skill-manager/skill_discovery.py --report
+```
+
+### 2. Onboard New AI Member
 ```bash
 # HR equips a new team member with their role skills
 cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh onboard <role>
@@ -139,7 +157,7 @@ cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh onboard <role>
 ./skills/skill-manager/skill-manager.sh onboard dev
 ```
 
-### 2. Configure Project Skills
+### 3. Configure Project Skills
 ```bash
 # HR reads skill-manifest.yaml and installs all required skills
 cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh configure-project
@@ -147,7 +165,7 @@ cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh configure-proje
 # This installs ALL skills for ALL roles defined in manifest
 ```
 
-### 3. Verify Role Skill Compliance
+### 4. Verify Role Skill Compliance
 ```bash
 # HR checks if a role has all required skills
 cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh verify <role>
@@ -156,13 +174,13 @@ cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh verify <role>
 ./skills/skill-manager/skill-manager.sh verify dev
 ```
 
-### 4. Update All Team Skills
+### 5. Update All Team Skills
 ```bash
 # HR updates all installed skills to latest versions
 cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh update-team
 ```
 
-### 5. Quarterly Skill Audit (HR → Boss Report)
+### 6. Quarterly Skill Audit (HR → Boss Report)
 ```bash
 # HR generates comprehensive skill audit for boss
 cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh audit-report
