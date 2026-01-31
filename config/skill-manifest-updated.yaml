@@ -1,0 +1,83 @@
+# Signal Hunter - 更新版技能清单
+# 安装日期: 2026-01-31
+
+project: Signal Hunter
+version: "0.3.1-skills"
+
+roles:
+  pm:
+    required:
+      - brave-search
+      - session-logs
+    optional:
+      - model-usage
+    note: "claude-team/codex-orchestration需额外配置"
+    
+  dev:
+    required:
+      - conventional-commits
+      - github-pr
+      - coding-agent
+      - github
+      - gitload
+    status: "✅ 完备"
+    
+  qa:
+    required:
+      - github-pr
+    status: "✅ 完备"
+    optional:
+      - pytest "待registry可用"
+      
+  ops:
+    required:
+      - linux-service-triage
+      - cron
+      - deploy-agent
+    optional:
+      - cloudflare
+    status: "✅ 完备"
+    
+  analyst:
+    required:
+      - browser
+      - canvas
+    optional:
+      - exa
+      - tavily
+      - parallel
+    status: "✅ 完备"
+    
+  editor:
+    required:
+      - frontend-design
+      - ui-audit
+      - ux-audit
+    status: "✅ 完备"
+    
+  hr:
+    required:
+      - skill-manager
+      - agentlens
+      - deepwiki
+      - perry-workspaces
+    status: "✅ 完备"
+    
+  web-researcher:
+    name: "网络研究员"
+    description: "外部信息获取、社交媒体监控"
+    required:
+      - brave-search
+      - bird
+      - himalaya
+      - linkedin-cli
+      - telegram-usage
+    optional:
+      - kagi-search
+      - tavily
+      - exa
+      - miniflux-news
+    status: "🆕 新增角色"
+
+global_skills_count: 27
+installed_date: "2026-01-31"

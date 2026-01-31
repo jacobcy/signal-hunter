@@ -16,9 +16,10 @@
 ├─ 运营经理（Ops）
 ├─ 数据分析师（Analyst）
 ├─ 编辑（Editor）
-└─ HR（角色管理）
-    ↓ 定义/优化
-角色人设 + 技能矩阵 + 协作规范
+├─ 网络研究员（Web Researcher）🆕 外部情报
+└─ HR（角色管理 + Skill配置）
+    ↓ 定义/优化/配置
+角色人设 + 技能矩阵 + 协作规范 + Skills安装
 ```
 
 ---
@@ -330,6 +331,69 @@
 
 ---
 
+### 2.8 网络研究员（Web Researcher）- External Intelligence Agent
+**核心职责**：
+- 外部信息获取与网络浏览
+- 社交媒体监控（Twitter/X, LinkedIn, Telegram）
+- 竞品动态追踪与市场调研
+- 新闻RSS监控与聚合
+- 外部API数据获取
+- 为团队提供实时外部情报
+
+**专属Skills**：
+- `bird` - **X/Twitter CLI：读取、搜索、发布推文**
+- `himalaya` - **邮件管理：IMAP/SMTP邮件收发**
+- `linkedin-cli` - **LinkedIn自动化：搜索档案、发送消息**
+- `telegram-usage` - **Telegram监控：会话统计和通知**
+- `brave-search` - **网页搜索：Brave Search API**
+- `kagi-search` - **Kagi搜索：高质量搜索结果**
+- `tavily` - **AI优化搜索：为AI设计的搜索引擎**
+- `exa` - **神经搜索：语义理解和代码搜索**
+- `parallel` - **高精度搜索：深度网页研究**
+- `miniflux-news` - **RSS聚合：新闻源监控**
+
+**任务模板**：
+```
+【角色】网络研究员 - 外部情报收集
+【目标】监控[目标]的最新动态并提供情报摘要
+【输入】
+- 监控目标（Twitter账号、竞品公司、关键词）
+- 时间范围（实时/每日/每周）
+- 输出格式（摘要/详细报告/原始数据）
+【输出】
+1. 情报摘要报告（关键点、趋势、异常）
+2. 原始数据存档（推文、文章、邮件）
+3. 可视化时间线（如有需要）
+4. 预警通知（重要动态即时上报）
+【工作流】
+1. 使用bird监控Twitter/X动态
+2. 使用himalaya检查相关邮件
+3. 使用brave-search/kagi-search进行深度搜索
+4. 使用miniflux-news聚合RSS源
+5. 整理成结构化报告提交给PM
+```
+
+**典型任务**：
+- 监控@elonmusk推文 → 情绪分析报告
+- 追踪竞品产品发布 → 竞品动态周报
+- 搜索行业新闻 → 每日情报简报
+- 监控Telegram频道 → 加密市场信号
+- 检查LinkedIn动态 → 人才流动分析
+
+**与团队协作**：
+- **PM（木木）**：派遣研究任务，定义情报需求
+- **Analyst**：接收原始数据进行深度分析
+- **Editor**：将情报转化为发布内容
+- **PM**：整合情报到决策支持
+
+**关键价值**：
+- **实时性**：第一时间获取外部动态
+- **全面性**：覆盖社交媒体、新闻、邮件多渠道
+- **自动化**：定时监控，减少人工重复劳动
+- **情报驱动**：为团队决策提供外部数据支持
+
+---
+
 ## 3. 协作流程
 
 ### 3.1 标准工作流程
@@ -369,24 +433,60 @@
 
 ## 4. 角色Skill矩阵
 
-| Skill | 木木 | PM | Dev | QA | Ops | Analyst | Editor | HR |
-|-------|------|-----|-----|-----|-----|---------|--------|-----|
-| session_spawn | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| web_search | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| read/edit/write | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| exec | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| cron | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| message | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| image | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
-| canvas | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+### 4.1 核心工具矩阵
 
-**Skill说明**：
-- `session_spawn`: 创建子任务session（仅木木、Dev可向下拆分）
-- `web_search`: 网络调研（PM、Analyst、Editor、HR高频使用）
-- `exec`: 系统命令执行（Dev、QA、Ops、Analyst需要运行代码/测试）
-- `cron`: 定时任务（木木调度、Ops运维监控）
-- `message`: 消息通知（木木汇报、Ops告警）
-- `image/canvas`: 可视化（PM、Analyst、Editor使用）
+| Skill | 木木 | PM | Dev | QA | Ops | Analyst | Editor | WebR | HR |
+|-------|------|-----|-----|-----|-----|---------|--------|------|-----|
+| session_spawn | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| web_search | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| read/edit/write | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| exec | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| cron | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| message | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| image | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
+| canvas | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+
+### 4.2 新增专用Skills矩阵
+
+| Skill | Dev | Ops | Analyst | WebR | HR | 说明 |
+|-------|-----|-----|---------|------|-----|------|
+| conventional-commits | ✅ | ❌ | ❌ | ❌ | ❌ | 提交规范 |
+| github-pr | ✅ | ❌ | ❌ | ❌ | ❌ | PR管理 |
+| coding-agent | ✅ | ❌ | ❌ | ❌ | ❌ | 多IDE支持 |
+| linux-service-triage | ❌ | ✅ | ❌ | ❌ | ❌ | 服务诊断 |
+| deploy-agent | ❌ | ✅ | ❌ | ❌ | ❌ | 部署自动化 |
+| browser | ❌ | ❌ | ✅ | ✅ | ❌ | 浏览器控制 |
+| brave-search | ❌ | ❌ | ✅ | ✅ | ❌ | 网页搜索 |
+| kagi-search | ❌ | ❌ | ❌ | ✅ | ❌ | Kagi搜索 |
+| tavily | ❌ | ❌ | ❌ | ✅ | ❌ | AI搜索 |
+| exa | ❌ | ❌ | ✅ | ✅ | ❌ | 神经搜索 |
+| **bird** | ❌ | ❌ | ❌ | ✅ | ❌ | **X/Twitter** |
+| **himalaya** | ❌ | ❌ | ❌ | ✅ | ❌ | **邮件管理** |
+| **linkedin-cli** | ❌ | ❌ | ❌ | ✅ | ❌ | **LinkedIn** |
+| frontend-design | ❌ | ❌ | ❌ | ❌ | ❌ | Editor专用 |
+| ui-audit | ❌ | ❌ | ❌ | ❌ | ❌ | Editor专用 |
+| agentlens | ❌ | ❌ | ❌ | ❌ | ✅ | HR专用 |
+| skill-manager | ❌ | ❌ | ❌ | ❌ | ✅ | HR专用 |
+
+**说明**：
+- **WebR** = Web Researcher（网络研究员）
+- **bird/himalaya/linkedin-cli** 为网络研究员核心技能
+- 全局安装，所有角色可按需调用
+
+### 4.3 Skill功能说明
+
+| Skill | 功能 | 典型使用者 |
+|-------|------|-----------|
+| `session_spawn` | 创建子任务session | 木木、Dev |
+| `web_search` | 网络调研 | PM、Analyst、WebR、HR |
+| `bird` | X/Twitter监控 | **WebR核心** |
+| `himalaya` | IMAP/SMTP邮件 | **WebR核心** |
+| `linkedin-cli` | LinkedIn自动化 | **WebR核心** |
+| `brave-search` | 网页搜索 | Analyst、WebR |
+| `browser` | 浏览器控制 | Analyst、WebR |
+| `exec` | 系统命令 | Dev、QA、Ops |
+| `cron` | 定时任务 | 木木、Ops |
+| `image/canvas` | 可视化 | PM、Analyst、Editor |
 
 ---
 
