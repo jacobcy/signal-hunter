@@ -288,6 +288,7 @@
 - 新角色调研与引入评估
 
 **专属Skills**：
+- `skill-manager` - **核心：为团队成员配置项目所需的OpenClaw skills**
 - `web_search` - 行业最佳实践、AI团队模式
 - `write` - 角色定义文档、协作规范
 - `read` - 现有角色定义、执行反馈

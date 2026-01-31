@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """
-Skill Manager - Install and manage OpenClaw skills for AI team members.
+Skill Manager - HR tool for configuring OpenClaw skills for AI team members.
 
-Usage:
-    python install_skills.py --role dev      # Install all skills for dev role
-    python install_skills.py --verify dev    # Verify skills for dev role
-    python install_skills.py --update        # Update all installed skills
-    python install_skills.py --list          # List all installed skills
-    python install_skills.py --audit         # Full skill audit report
+HR Usage:
+    python install_skills.py --onboard dev      # Onboard new Dev team member
+    python install_skills.py --configure-project # Configure all project skills
+    python install_skills.py --verify dev       # Verify Dev skill compliance
+    python install_skills.py --verify-all       # Verify all roles
+    python install_skills.py --update-team      # Update all team skills
+    python install_skills.py --audit-report     # Generate HR audit report
+    python install_skills.py --list             # List installed skills
+
+This is an HR-exclusive tool for managing AI team capability infrastructure.
 """
 
 import argparse
@@ -252,34 +256,226 @@ def audit_skills() -> Dict:
     return audit
 
 
+def onboard_role(role: str) -> bool:
+    """HR onboards a new AI team member with required skills."""
+    print(f"\n👋 HR Onboarding: {role.upper()}")
+    print("=" * 60)
+    print(f"Equipping new {role} with required skills...")
+    
+    results = install_role_skills(role)
+    success = all(results.values())
+    
+    print("\n" + "=" * 60)
+    if success:
+        print(f"✅ Onboarding complete! {role.upper()} is ready.")
+        print(f"\n📋 Next steps:")
+        print(f"   1. Brief {role} on available skills")
+        print(f"   2. Test each skill functionality")
+        print(f"   3. Add to quarterly audit schedule")
+    else:
+        print(f"⚠️ Onboarding incomplete. Check errors above.")
+    
+    return success
+
+
+def configure_project() -> Dict[str, bool]:
+    """HR configures all skills for the entire project."""
+    print("\n🏗️  HR Configuring Project: Signal Hunter")
+    print("=" * 60)
+    print("Installing all required skills for all roles...")
+    print()
+    
+    all_results = {}
+    for role in ROLE_SKILLS.keys():
+        print(f"\n📦 Configuring {role.upper()}...")
+        results = install_role_skills(role)
+        all_results[role] = all(results.values())
+    
+    print("\n" + "=" * 60)
+    success_count = sum(all_results.values())
+    total_roles = len(all_results)
+    print(f"\n✅ Project configuration: {success_count}/{total_roles} roles equipped")
+    
+    for role, success in all_results.items():
+        status = "✅" if success else "❌"
+        print(f"   {status} {role.upper()}")
+    
+    return all_results
+
+
+def verify_all_roles() -> Dict[str, bool]:
+    """HR verifies all roles have required skills."""
+    print("\n🔍 HR Verifying All Roles")
+    print("=" * 60)
+    
+    all_results = {}
+    for role in ROLE_SKILLS.keys():
+        results = verify_role_skills(role)
+        all_results[role] = all(results.values())
+    
+    print("\n" + "=" * 60)
+    compliant = sum(all_results.values())
+    total = len(all_results)
+    print(f"\n✅ Compliance: {compliant}/{total} roles fully equipped")
+    
+    return all_results
+
+
+def generate_audit_report() -> str:
+    """HR generates comprehensive audit report for Boss."""
+    from datetime import datetime
+    
+    report_lines = []
+    report_lines.append("=" * 70)
+    report_lines.append("📊 SKILL AUDIT REPORT (HR → Boss)")
+    report_lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    report_lines.append("Project: Signal Hunter")
+    report_lines.append("=" * 70)
+    
+    # Get all installed skills
+    installed_skills = set()
+    for skill_dir in SKILL_DIRS:
+        if skill_dir.exists():
+            for item in skill_dir.iterdir():
+                if item.is_dir():
+                    installed_skills.add(item.name)
+    
+    report_lines.append(f"\n📈 OVERVIEW")
+    report_lines.append(f"   Total installed skills: {len(installed_skills)}")
+    report_lines.append(f"   Total required skills: {sum(len(skills) for skills in ROLE_SKILLS.values())}")
+    
+    report_lines.append(f"\n📋 ROLE COMPLIANCE")
+    
+    compliant_roles = 0
+    gaps = []
+    
+    for role, required_skills in ROLE_SKILLS.items():
+        installed = [s for s in required_skills if s in installed_skills]
+        missing = [s for s in required_skills if s not in installed_skills]
+        
+        coverage = len(installed) / len(required_skills) * 100 if required_skills else 0
+        status = "✅" if coverage == 100 else "⚠️"
+        
+        report_lines.append(f"\n   {status} {role.upper()}")
+        report_lines.append(f"      Coverage: {len(installed)}/{len(required_skills)} ({coverage:.0f}%)")
+        
+        if missing:
+            gaps.append((role, missing))
+            for m in missing:
+                report_lines.append(f"      ❌ Missing: {m}")
+        else:
+            compliant_roles += 1
+    
+    report_lines.append(f"\n🎯 SUMMARY")
+    report_lines.append(f"   Compliant roles: {compliant_roles}/{len(ROLE_SKILLS)}")
+    report_lines.append(f"   Overall coverage: {(len(installed_skills) / sum(len(s) for s in ROLE_SKILLS.values())) * 100:.0f}%")
+    
+    if gaps:
+        report_lines.append(f"\n⚠️  GAPS IDENTIFIED")
+        for role, missing in gaps:
+            report_lines.append(f"   {role}: {', '.join(missing)}")
+    
+    report_lines.append(f"\n💡 HR RECOMMENDATIONS")
+    if gaps:
+        report_lines.append("   1. Install missing required skills")
+        report_lines.append("   2. Check ClawdHub registry for unavailable skills")
+    else:
+        report_lines.append("   ✅ All roles fully equipped")
+    report_lines.append("   3. Schedule next audit for next week")
+    
+    report_lines.append("\n" + "=" * 70)
+    
+    report = "\n".join(report_lines)
+    print(report)
+    
+    # Save report
+    report_dir = Path("memory/reports")
+    report_dir.mkdir(parents=True, exist_ok=True)
+    report_file = report_dir / f"skill-audit-{datetime.now().strftime('%Y-%m-%d')}.md"
+    report_file.write_text(report)
+    print(f"\n💾 Report saved to: {report_file}")
+    
+    return report
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Manage OpenClaw skills for AI team members"
+        description="HR Skill Manager - Configure OpenClaw skills for AI team",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+HR Commands:
+  --onboard <role>       Onboard new AI team member
+  --configure-project    Configure all project skills
+  --verify <role>        Verify role skill compliance
+  --verify-all           Verify all roles
+  --update-team          Update all team skills
+  --audit-report         Generate HR audit report for Boss
+  --list                 List installed skills
+
+Examples:
+  # HR onboarding new Dev
+  python install_skills.py --onboard dev
+
+  # HR configuring entire project
+  python install_skills.py --configure-project
+
+  # HR quarterly audit
+  python install_skills.py --audit-report
+        """
+    )
+    
+    # HR commands
+    parser.add_argument(
+        "--onboard",
+        choices=list(ROLE_SKILLS.keys()),
+        help="HR: Onboard new AI team member with role skills"
     )
     parser.add_argument(
-        "--role",
-        choices=list(ROLE_SKILLS.keys()),
-        help="Install skills for a specific role"
+        "--configure-project",
+        action="store_true",
+        help="HR: Configure all skills for entire project"
     )
     parser.add_argument(
         "--verify",
         choices=list(ROLE_SKILLS.keys()),
-        help="Verify skills for a specific role"
+        help="HR: Verify skills for a specific role"
     )
     parser.add_argument(
-        "--update",
+        "--verify-all",
         action="store_true",
-        help="Update all installed skills"
+        help="HR: Verify all roles have required skills"
+    )
+    parser.add_argument(
+        "--update-team",
+        action="store_true",
+        help="HR: Update all installed skills to latest"
+    )
+    parser.add_argument(
+        "--audit-report",
+        action="store_true",
+        help="HR: Generate comprehensive audit report for Boss"
     )
     parser.add_argument(
         "--list",
         action="store_true",
         help="List all installed skills"
     )
+    
+    # Legacy commands (backward compatibility)
+    parser.add_argument(
+        "--role",
+        choices=list(ROLE_SKILLS.keys()),
+        help=argparse.SUPPRESS  # Hidden, use --onboard instead
+    )
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        help=argparse.SUPPRESS  # Hidden, use --update-team instead
+    )
     parser.add_argument(
         "--audit",
         action="store_true",
-        help="Generate full skill audit report"
+        help=argparse.SUPPRESS  # Hidden, use --audit-report instead
     )
     parser.add_argument(
         "--mode",
@@ -290,20 +486,42 @@ def main():
     
     args = parser.parse_args()
     
-    if args.role:
-        results = install_role_skills(args.role, args.mode)
+    # HR commands
+    if args.onboard:
+        success = onboard_role(args.onboard)
+        sys.exit(0 if success else 1)
+    
+    elif args.configure_project:
+        results = configure_project()
         sys.exit(0 if all(results.values()) else 1)
     
     elif args.verify:
         results = verify_role_skills(args.verify)
         sys.exit(0 if all(results.values()) else 1)
     
-    elif args.update:
+    elif args.verify_all:
+        results = verify_all_roles()
+        sys.exit(0 if all(results.values()) else 1)
+    
+    elif args.update_team:
         results = update_all_skills()
+        sys.exit(0)
+    
+    elif args.audit_report:
+        generate_audit_report()
         sys.exit(0)
     
     elif args.list:
         list_installed_skills()
+        sys.exit(0)
+    
+    # Legacy command support
+    elif args.role:
+        results = install_role_skills(args.role, args.mode)
+        sys.exit(0 if all(results.values()) else 1)
+    
+    elif args.update:
+        results = update_all_skills()
         sys.exit(0)
     
     elif args.audit:
@@ -312,9 +530,9 @@ def main():
     
     else:
         parser.print_help()
-        print("\n\nAvailable roles:")
+        print("\n\n📋 Available Roles:")
         for role, skills in ROLE_SKILLS.items():
-            print(f"  {role}: {', '.join(skills[:3])}...")
+            print(f"  {role:12} : {len(skills)} skills")
 
 
 if __name__ == "__main__":

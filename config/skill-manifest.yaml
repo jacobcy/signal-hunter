@@ -1,0 +1,140 @@
+# Signal Hunter - Skill Manifest
+# HR-Managed: Project skill requirements and role assignments
+# Last Updated: 2026-01-31
+# Updated By: HR
+
+project:
+  name: Signal Hunter
+  version: "0.3.0"
+  description: "AI-powered trading signal aggregator with anti-echo architecture"
+
+installation:
+  mode: global  # global | workspace | local
+  # HR Note: Global installation recommended for shared AI team
+  # All roles share same skills across projects for consistency
+
+# Role skill assignments - HR configures per project needs
+roles:
+  pm:
+    name: "AI Project Manager"
+    description: "木木 - Task orchestration and team coordination"
+    required:
+      - claude-team          # Multi-agent orchestration via iTerm2
+      - codex-orchestration  # General task scheduling
+      - model-usage          # Cost monitoring and usage tracking
+    optional:
+      - prompt-log           # Session transcript analysis
+      - session-logs         # Log search and analysis
+      - cron                 # Scheduled task management
+    
+  dev:
+    name: "Developer"
+    description: "Code implementation, bug fixes, performance optimization"
+    required:
+      - coding-agent         # Multi-IDE support (Codex, Claude Code, etc.)
+      - conventional-commits # Commit message formatting
+      - github               # GitHub CLI operations
+      - github-pr            # PR management and review
+    optional:
+      - gitload              # Partial repository downloads
+    
+  qa:
+    name: "QA Engineer"
+    description: "Test strategy, automation, coverage management"
+    required:
+      - github-pr            # PR testing and validation
+    optional:
+      - pytest               # Test framework (install when available)
+      - coverage             # Coverage reporting (install when available)
+    notes: "QA role pending pytest/coverage skill availability in registry"
+    
+  ops:
+    name: "Operations Manager"
+    description: "Deployment, monitoring, incident response"
+    required:
+      - linux-service-triage # Service diagnostics and log analysis
+      - deploy-agent         # Multi-step deployment automation
+    optional:
+      - cron                 # Scheduled monitoring tasks
+    
+  analyst:
+    name: "Data Analyst"
+    description: "Signal analysis, trend detection, visualization"
+    required:
+      - browser              # Web scraping and data extraction
+      - canvas               # Data visualization and dashboards
+    optional:
+      - finance              # Financial data APIs (search for specific)
+    
+  editor:
+    name: "Technical Editor"
+    description: "Documentation, content creation, API docs"
+    required:
+      - frontend-design      # UI/UX design guidelines
+    optional:
+      - ui-audit             # Interface review
+      - ux-audit             # UX evaluation
+    
+  hr:
+    name: "Human Resources"
+    description: "Role definition, skill management, team architecture"
+    required:
+      - skill-manager        # Self-reference: skill configuration
+      - agentlens            # Codebase understanding for role design
+      - perry-workspaces     # Workspace management
+    optional:
+      - deepwiki             # Documentation query
+
+# Skill policies - HR enforces these restrictions
+policies:
+  principle_of_least_privilege:
+    enabled: true
+    description: "Roles only receive skills required for their responsibilities"
+  
+  production_safety:
+    enabled: true
+    description: "Restrict deployment capabilities to Ops only"
+    restrictions:
+      - role: qa
+        forbidden: ["deploy-agent", "linux-service-triage"]
+        reason: "QA tests code but cannot deploy to production"
+      - role: dev
+        forbidden: ["deploy-agent"]
+        reason: "Dev writes code, Ops handles deployment"
+      - role: analyst
+        forbidden: ["deploy-agent"]
+        reason: "Analyst reads data, no deployment权限"
+  
+  cost_control:
+    enabled: true
+    description: "Monitor AI model usage costs"
+    required_for:
+      - role: pm
+        skills: ["model-usage"]
+        reason: "PM tracks team AI usage costs"
+
+# Skill status tracking - HR updates this section
+status:
+  total_required: 18
+  total_optional: 12
+  installed: 1  # skill-manager itself
+  pending_registry:  # Skills not yet available in ClawdHub
+    - pytest
+    - coverage
+  
+# Audit schedule - HR managed
+audit:
+  frequency: "weekly"
+  last_audit: "2026-01-31"
+  next_audit: "2026-02-07"
+  findings: []
+
+# Changelog - HR maintains
+changelog:
+  - date: "2026-01-31"
+    version: "0.3.0"
+    changes:
+      - "Initial skill manifest for Signal Hunter v0.3.0"
+      - "Defined 7 roles with required/optional skills"
+      - "Set installation mode to global"
+    updated_by: "HR"

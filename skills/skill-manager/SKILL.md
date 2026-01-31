@@ -1,268 +1,374 @@
 # skill-manager
 
-Manage OpenClaw skills for AI team members. Install, update, verify, and configure skills by role.
+**Owner: HR (Human Resources)**  
+**Purpose: Configure OpenClaw skills for AI team members per project**
 
-## When to Use
+This is an HR-exclusive skill for managing the capability infrastructure of AI team members. HR uses this to equip each role with the necessary tools for specific projects.
 
-Use this skill when you need to:
-- Set up skills for a new AI team member (Dev, QA, Ops, etc.)
-- Bulk install recommended skills for a specific role
-- Update all skills to latest versions
-- Verify skill availability for a team member
-- Audit current skill installations
+---
 
-## Installation Scope
+## HR Responsibility
 
-This skill supports three installation modes:
+As HR, you are the **Skill Administrator** for the AI team:
+- **Onboarding**: Equip new AI members with required skills for their role
+- **Project Setup**: Configure project-specific skill sets
+- **Maintenance**: Update skills when new capabilities are needed
+- **Audit**: Regular skill inventory and gap analysis
+- **Policy**: Define which skills each role can/cannot use
 
-| Mode | Path | Use Case |
-|------|------|----------|
-| Global | `~/.openclaw/skills/` | Shared across all projects (Recommended for teams) |
-| Workspace | `<project>/skills/` | Project-specific skills |
-| Local | `./skills/` | Temporary/testing |
+---
 
-## Role-Based Skill Presets
+## When HR Uses This Skill
 
-### AI Project Manager (木木)
-```yaml
-skills:
-  - claude-team          # Multi-agent orchestration
-  - codex-orchestration  # Task scheduling
-  - model-usage          # Cost monitoring
-  - prompt-log           # Session analysis
-  - session-logs         # Log search
-  - cron                 # Scheduled tasks
-```
+1. **New AI Member Onboarding**
+   ```
+   New Dev joining → HR installs dev skill preset
+   ```
 
-### Developer (Dev)
-```yaml
-skills:
-  - coding-agent         # Multi-IDE support
-  - conventional-commits # Commit formatting
-  - github               # GitHub operations
-  - github-pr            # PR management
-  - gitload              # Partial repo download
-```
+2. **New Project Initialization**
+   ```
+   New project starts → HR configures project skill requirements
+   ```
 
-### QA Engineer (QA)
-```yaml
-skills:
-  - pytest               # Test framework (if available)
-  - coverage             # Coverage reporting
-  - github-pr            # PR testing
-```
+3. **Skill Updates**
+   ```
+   New version available → HR updates team skills
+   ```
 
-### Operations (Ops)
-```yaml
-skills:
-  - linux-service-triage # Service diagnostics
-  - deploy-agent         # Deployment automation
-  - cron                 # Scheduled monitoring
-```
+4. **Quarterly Skill Audit**
+   ```
+   Review all roles → HR checks skill coverage → Report to boss
+   ```
 
-### Data Analyst (Analyst)
-```yaml
-skills:
-  - browser              # Web scraping
-  - canvas               # Visualization
-  - finance              # Financial data (search)
-```
+---
 
-### Editor
-```yaml
-skills:
-  - frontend-design      # UI/UX design
-  - ui-audit             # Interface review
-  - ux-audit             # UX evaluation
-```
+## Project-Level Skill Configuration
 
-### HR / Role Designer
-```yaml
-skills:
-  - agentlens            # Codebase understanding
-  - perry-workspaces     # Workspace management
-  - deepwiki             # Documentation query
-```
-
-## Commands
-
-### Install Skills for a Role
-```bash
-# Install all recommended skills for a role
-cd /Users/Jacob/clawd && .venv/bin/python -c "
-import subprocess
-role = 'dev'  # dev, qa, ops, analyst, editor, pm, hr
-skills = {
-    'dev': ['conventional-commits', 'github-pr', 'gitload'],
-    'qa': ['github-pr'],  # Add pytest, coverage when available
-    'ops': ['linux-service-triage', 'deploy-agent'],
-    'analyst': ['browser', 'canvas'],
-    'editor': ['frontend-design', 'ui-audit'],
-    'pm': ['deepwiki'],
-    'hr': ['agentlens', 'perry-workspaces']
-}.get(role, [])
-
-for skill in skills:
-    subprocess.run(['npx', 'clawdhub@latest', 'install', skill], check=False)
-print(f'Installed {len(skills)} skills for {role}')
-"
-```
-
-### Verify Installed Skills
-```bash
-# List all installed skills
-cd /Users/Jacob/clawd && ls -la ~/.openclaw/skills/ 2>/dev/null || echo "No global skills installed"
-cd /Users/Jacob/clawd && ls -la skills/ 2>/dev/null || echo "No workspace skills installed"
-```
-
-### Update All Skills
-```bash
-# Update all installed skills to latest
-cd /Users/Jacob/clawd && .venv/bin/python -c "
-import subprocess
-import os
-
-skill_dirs = [
-    os.path.expanduser('~/.openclaw/skills/'),
-    'skills/'
-]
-
-for skill_dir in skill_dirs:
-    if os.path.exists(skill_dir):
-        for skill in os.listdir(skill_dir):
-            skill_path = os.path.join(skill_dir, skill)
-            if os.path.isdir(skill_path):
-                print(f'Updating {skill}...')
-                subprocess.run(['npx', 'clawdhub@latest', 'install', skill], check=False)
-"
-```
-
-### Check Skill Availability
-```bash
-# Verify specific skill is installed
-cd /Users/Jacob/clawd && test -d ~/.openclaw/skills/claude-team && echo "✅ claude-team installed" || echo "❌ claude-team not found"
-```
-
-## Configuration
-
-### skill-config.yaml
-Create this file to customize role presets:
+HR creates `skill-manifest.yaml` for each project:
 
 ```yaml
-# /Users/Jacob/clawd/config/skill-config.yaml
-installation_mode: global  # global | workspace | local
+# /Users/Jacob/clawd/config/skill-manifest.yaml
+# HR-managed: Project skill requirements
 
+project: Signal Hunter
+version: "0.3.0"
+last_updated: "2026-01-31"
+updated_by: "HR"
+
+# Installation scope
+installation:
+  mode: global  # global | workspace | local
+  # global: ~/.openclaw/skills/ (recommended for shared teams)
+  # workspace: <project>/skills/ (project-specific)
+
+# Role skill assignments
 roles:
+  pm:
+    required:
+      - claude-team          # Multi-agent orchestration
+      - codex-orchestration  # Task scheduling
+      - model-usage          # Cost monitoring
+    optional:
+      - prompt-log           # Session analysis
+    
   dev:
-    - conventional-commits
-    - github-pr
-    - gitload
+    required:
+      - coding-agent         # Multi-IDE support
+      - conventional-commits # Commit formatting
+      - github               # GitHub operations
+      - github-pr            # PR management
+    optional:
+      - gitload              # Partial repo download
     
   qa:
-    - github-pr
-    # - pytest  # Uncomment when available
-    # - coverage
+    required:
+      - github-pr            # PR testing
+    optional:
+      - pytest               # When available
+      - coverage             # When available
     
   ops:
-    - linux-service-triage
-    - deploy-agent
+    required:
+      - linux-service-triage # Service diagnostics
+      - deploy-agent         # Deployment automation
+    optional:
+      - cron                 # Scheduled monitoring
     
   analyst:
-    - browser
-    - canvas
+    required:
+      - browser              # Web scraping
+      - canvas               # Visualization
+    optional:
+      - finance              # Financial data APIs
     
   editor:
-    - frontend-design
-    - ui-audit
-    
-  pm:
-    - deepwiki
+    required:
+      - frontend-design      # UI/UX design
+    optional:
+      - ui-audit             # Interface review
+      - ux-audit             # UX evaluation
     
   hr:
-    - agentlens
-    - perry-workspaces
+    required:
+      - skill-manager        # Self-reference: skill management
+      - agentlens            # Codebase understanding
+      - perry-workspaces     # Workspace management
+    optional:
+      - deepwiki             # Documentation query
+
+# Policy: Skill restrictions
+policy:
+  dev:
+    forbidden: []  # Dev can use most skills
+  qa:
+    forbidden: ["deploy-agent"]  # QA cannot deploy to production
+  ops:
+    forbidden: []  # Ops has broad access
+```
+
+---
+
+## HR Commands
+
+### 1. Onboard New AI Member
+```bash
+# HR equips a new team member with their role skills
+cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh onboard <role>
+
+# Example: Onboard new Dev
+./skills/skill-manager/skill-manager.sh onboard dev
+```
+
+### 2. Configure Project Skills
+```bash
+# HR reads skill-manifest.yaml and installs all required skills
+cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh configure-project
+
+# This installs ALL skills for ALL roles defined in manifest
+```
+
+### 3. Verify Role Skill Compliance
+```bash
+# HR checks if a role has all required skills
+cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh verify <role>
+
+# Example: Verify Dev compliance
+./skills/skill-manager/skill-manager.sh verify dev
+```
+
+### 4. Update All Team Skills
+```bash
+# HR updates all installed skills to latest versions
+cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh update-team
+```
+
+### 5. Quarterly Skill Audit (HR → Boss Report)
+```bash
+# HR generates comprehensive skill audit for boss
+cd /Users/Jacob/clawd && ./skills/skill-manager/skill-manager.sh audit-report
+
+# Output: Report showing skill coverage, gaps, recommendations
+```
+
+---
+
+## HR Workflow: New Project Setup
+
+```
+Boss: "Start new project: Signal Hunter v0.4"
+    ↓
+HR: Create skill-manifest.yaml
+    - Define required skills per role
+    - Set installation mode (global/workspace)
+    - Document skill policies
+    ↓
+HR: Execute skill configuration
+    ./skill-manager.sh configure-project
+    ↓
+HR: Verify all roles equipped
+    ./skill-manager.sh verify-all
+    ↓
+HR: Report to Boss
+    "✅ All 7 roles equipped with 24 skills for v0.4"
+    ↓
+木木: Begin task dispatch with fully-equipped team
+```
+
+---
+
+## HR Workflow: Quarterly Skill Audit
+
+```
+HR: Run quarterly audit
+    ./skill-manager.sh audit-report
+    ↓
+HR: Analyze results
+    - Check skill coverage by role
+    - Identify missing required skills
+    - Review optional skill adoption
+    - Assess new skill needs
+    ↓
+HR: Generate report for Boss
+    📊 Skill Audit Report Q1 2026
     
-  # Custom role example
-  data-engineer:
-    - browser
-    - canvas
-    - agentlens
+    Coverage: 18/24 required skills (75%)
+    Gaps:
+      - QA: pytest not yet available
+      - Analyst: finance skills pending
+    
+    Recommendations:
+      1. Install new finance skills for Analyst
+      2. Update all skills to v2.x
+      3. Evaluate new claude-team features
+    ↓
+Boss: Review and approve recommendations
+    ↓
+HR: Execute approved changes
 ```
 
-## Quick Start
+---
 
-### Setup New Team Member
-```bash
-# 1. Choose role
-ROLE=dev
+## Skill Inventory Management
 
-# 2. Install skills for role
-cd /Users/Jacob/clawd && .venv/bin/python scripts/install_skills.py --role $ROLE
+### Global vs Workspace Installation
 
-# 3. Verify installation
-cd /Users/Jacob/clawd && .venv/bin/python scripts/install_skills.py --verify $ROLE
+**Global (`~/.openclaw/skills/`)** - HR Default Choice
+- ✅ All projects share same skills
+- ✅ Consistent team capability
+- ✅ Easier maintenance
+- ✅ Recommended for most teams
 
-# 4. Report to project manager
-echo "✅ $ROLE skills installed and verified"
+**Workspace (`<project>/skills/`)** - HR Special Cases
+- ✅ Project-specific skill versions
+- ✅ Isolation between projects
+- ⚠️ More maintenance overhead
+- Use when: Skill version conflicts between projects
+
+**HR Decision Matrix:**
+| Scenario | HR Recommendation |
+|----------|-------------------|
+| Single AI team, multiple projects | Global installation |
+| Different projects need different skill versions | Workspace installation |
+| Experimental/temporary project | Local installation |
+
+---
+
+## Skill Policy Enforcement
+
+HR defines and enforces skill policies:
+
+```yaml
+# skill-policy.yaml - HR-managed
+policies:
+  principle_of_least_privilege:
+    description: "Roles only get skills they need"
+    enforcement: strict
+    
+  production_safety:
+    description: "QA cannot have deploy skills"
+    rules:
+      - role: qa
+        forbidden: ["deploy-agent", "linux-service-triage"]
+      - role: dev
+        forbidden: ["deploy-agent"]  # Dev code, Ops deploy
 ```
 
-## Best Practices
+---
 
-1. **Use Global Installation for Teams**: All AI members share same skills
-2. **Pin Critical Skills**: Document required skill versions
-3. **Regular Updates**: Weekly skill update checks
-4. **Role Separation**: Don't install all skills to all roles (security/principle of least privilege)
-5. **Verify After Install**: Always test skill functionality after installation
+## Integration with AI Team Architecture
 
-## Troubleshooting
+### HR Skill Manifest Location
+```
+/Users/Jacob/clawd/
+├── config/
+│   └── skill-manifest.yaml      # ← HR-managed
+├── skills/
+│   └── skill-manager/           # ← HR's tool
+│       ├── SKILL.md
+│       └── install_skills.py
+└── docs/
+    └── AI_TEAM_ARCHITECTURE.md  # ← References HR skill management
+```
 
-### Skill Not Found
+### HR Reporting to Boss
+
+**Weekly Skill Status (HR → Boss):**
+```
+📋 Skill Management Report (HR)
+Week: 2026-W05
+
+✅ Onboarded: 1 new Dev (5 skills installed)
+✅ Updated: 3 skills to latest versions
+⚠️ Pending: pytest skill not yet available in registry
+📊 Coverage: 18/24 required skills (75%)
+
+Action Items:
+1. Monitor pytest availability
+2. Plan Q1 skill audit for next week
+```
+
+---
+
+## HR Onboarding Checklist
+
+For new AI team members:
+
+- [ ] Define role responsibilities with Boss
+- [ ] Review skill-manifest.yaml for role requirements
+- [ ] Install required skills using skill-manager
+- [ ] Verify skill functionality (test each tool)
+- [ ] Document any skill gaps or issues
+- [ ] Brief AI member on available skills
+- [ ] Add to quarterly audit schedule
+
+---
+
+## Troubleshooting (HR Guide)
+
+### Skill Not in Registry
 ```bash
-# Search for skill in registry
+# HR searches for alternative skills
 npx clawdhub@latest search <keyword>
+
+# Or checks awesome-openclaw-skills repo
+# https://github.com/VoltAgent/awesome-openclaw-skills
 ```
 
-### Installation Failed
+### Installation Permission Denied
 ```bash
-# Check Node.js version
-node --version  # Should be 18+
-
-# Clear cache and retry
-rm -rf ~/.clawdhub/cache
-npx clawdhub@latest install <skill>
+# HR switches to workspace installation
+# Edit skill-manifest.yaml:
+installation:
+  mode: workspace  # Instead of global
 ```
 
-### Permission Denied (Global Install)
+### Skill Version Conflict
 ```bash
-# Use workspace installation instead
-cd /Users/Jacob/clawd
-npx clawdhub@latest install <skill> --local
+# HR pins specific version in manifest
+roles:
+  dev:
+    required:
+      - name: github
+        version: "^2.0.0"  # Semantic versioning
 ```
 
-## Integration with AI Team
+---
 
-### In AI_TEAM_ARCHITECTURE.md
-Reference this skill for onboarding new AI team members:
+## Best Practices for HR
 
-```markdown
-### Role Onboarding Checklist
-- [ ] Define role responsibilities
-- [ ] Assign skill preset via skill-manager
-- [ ] Verify skill availability
-- [ ] Test first task execution
-```
+1. **Document Everything**: Every skill change in skill-manifest.yaml
+2. **Version Control**: Commit skill-manifest.yaml changes to git
+3. **Regular Audits**: Monthly skill inventory, quarterly full audit
+4. **Policy First**: Define policies before installing skills
+5. **Test Before Deploy**: Verify skills work in test environment
+6. **Gradual Rollout**: Pilot new skills with one role before team-wide
+7. **Keep Manifest Updated**: Remove unused skills, add new requirements
 
-### In Task Orchestrator
-Use skill-manager to prepare execution environment:
+---
 
-```python
-# Before dispatching QA squad
-if role == "qa":
-    ensure_skills_installed(["github-pr", "pytest"])
-```
+## Related Resources
 
-## Related
-
-- [Awesome OpenClaw Skills](https://github.com/VoltAgent/awesome-openclaw-skills)
-- [ClawdHub Registry](https://clawdhub.com)
-- [Skill Development Guide](https://docs.openclaw.ai/skills)
+- **Awesome Skills**: https://github.com/VoltAgent/awesome-openclaw-skills
+- **ClawdHub Registry**: https://clawdhub.com
+- **AI Team Architecture**: `docs/AI_TEAM_ARCHITECTURE.md`
+- **Skill Development**: https://docs.openclaw.ai/skills
