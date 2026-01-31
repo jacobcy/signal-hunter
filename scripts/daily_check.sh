@@ -58,7 +58,7 @@ fi
 
 # MyPy check
 echo "  Running MyPy type checker..." >> "$REPORT_FILE"
-MYPY_ERRORS=$(mypy src/ --ignore-missing-imports 2>/dev/null | grep -c "error:" || echo "0")
+MYPY_ERRORS=$(mypy --ignore-missing-imports src/ 2>/dev/null | grep -c "error:" || echo "0")
 if [ "$MYPY_ERRORS" -gt 0 ]; then
     echo "  ⚠️ MyPy found $MYPY_ERRORS type errors" >> "$REPORT_FILE"
     mypy src/ --ignore-missing-imports 2>/dev/null | grep "error:" | head -3 >> "$REPORT_FILE"

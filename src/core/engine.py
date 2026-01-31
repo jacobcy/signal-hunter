@@ -1,19 +1,19 @@
 import asyncio
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import datetime
 from loguru import logger
-from src.models.schemas import Source, PlatformType, Signal
+from src.models.schemas import Source, PlatformType, Signal, MarketAlert, DiversityMetrics
 from src.core.fetcher import FetcherFactory
 from src.core.processor import SignalProcessor
 from src.core.database import Database
+from src.core.diversity_analyzer import DiversityAnalyzer
 from src.utils.notifier import send_telegram_alert
 
 class Engine:
     def __init__(self):
         self.sources: List[Source] = []
-        # Signals list is now transient for current batch, history is in DB
-        self.current_batch_signals: List[Signal] = [] 
-        # 注意：不在 __init__ 中创建 Database 实例，避免异步环境中的连接问题
+        self.current_batch_signals: List[Signal] = []
+        self.diversity_analyzer: Optional[DiversityAnalyzer] = None
 
     def load_sources_from_memory(self):
         """
@@ -39,18 +39,35 @@ class Engine:
                 name = clean_parts[0]
                 url = clean_parts[1]
                 platform_str = clean_parts[2].lower()
-                weight = float(clean_parts[3]) if len(clean_parts) > 3 else 1.0
                 
-                # Map string to Enum
+                # New format with category
+                if len(clean_parts) >= 5:
+                    category_str = clean_parts[3].lower()
+                    weight = float(clean_parts[4])
+                else:
+                    category_str = "mainstream"  # Default
+                    weight = float(clean_parts[3]) if len(clean_parts) > 3 else 1.0
+                
+                # Map strings to Enums
                 try:
                     platform = PlatformType(platform_str)
                 except ValueError:
                     platform = PlatformType.GENERIC
                 
-                source = Source(name=name, url=url, platform=platform, weight=weight)
+                try:
+                    from src.models.schemas import SourceCategory
+                    category = SourceCategory(category_str)
+                except ValueError:
+                    category = SourceCategory.MAINSTREAM
+                
+                source = Source(name=name, url=url, platform=platform, category=category, weight=weight)
                 self.sources.append(source)
             
+            # Initialize diversity analyzer with loaded sources
+            self.diversity_analyzer = DiversityAnalyzer(self.sources)
+            
             logger.info(f"📚 Loaded {len(self.sources)} sources from memory.")
+            logger.info(f"🎯 Diversity analysis enabled with {len(self.sources)} sources.")
                 
         except Exception as e:
             logger.error(f"❌ Failed to load sources: {e}")
@@ -85,11 +102,11 @@ class Engine:
                 elif isinstance(res, Exception):
                     logger.error(f"Fetch error: {res}")
             
-            # 2. Resonance Detection (using DB history)
-            alert_count = await self._detect_resonance_with_db(db)
+            # 2. Diversity-Aware Signal Analysis (Anti-Echo Chamber)
+            alert_count = await self._analyze_with_diversity(db)
             
             if alert_count == 0:
-                logger.info("✅ No new resonance found.")
+                logger.info("✅ No significant signals found (diversity analysis complete).")
             
             logger.info("🏁 Cycle complete.")
         except Exception as e:
@@ -108,51 +125,191 @@ class Engine:
             logger.error(f"💥 Error processing {source.name}: {e}")
             return []
 
-    async def _detect_resonance_with_db(self, db) -> int:
+    async def _analyze_with_diversity(self, db) -> int:
         """
-        Check for resonance: >= 2 sources mentioning the same ticker in the LAST 24 HOURS.
+        Analyze signals with diversity metrics to prevent echo chamber amplification.
+        
+        New Logic:
+        - Echo Chamber Alert: Low diversity + high consensus (DANGER)
+        - Contrarian Opportunity: Strong minority view with conviction (OPPORTUNITY)
+        - Extreme Consensus: >80% agreement (REVERSAL WARNING)
+        - Traditional Resonance: Only alert if diversity > 0.3
+        
         Returns number of alerts sent.
         """
-        # Load signals from DB (24h window) - async
+        if not self.diversity_analyzer:
+            logger.warning("Diversity analyzer not initialized, falling back to basic resonance.")
+            return await self._legacy_resonance_check(db)
+        
+        # Load signals from DB (24h window)
         recent_signals = await db.get_recent_signals(hours=24)
         
-        ticker_counts: Dict[str, List[Signal]] = {}
+        # Group by ticker
+        ticker_signals: Dict[str, List[Signal]] = {}
+        for sig in recent_signals:
+            if sig.ticker not in ticker_signals:
+                ticker_signals[sig.ticker] = []
+            ticker_signals[sig.ticker].append(sig)
+        
         alerts_sent = 0
+        
+        for ticker, signals in ticker_signals.items():
+            # Check if already alerted
+            is_alerted = await db.is_alerted_recently(ticker)
+            if is_alerted:
+                logger.debug(f"🤫 Suppressing alert for {ticker} (already sent)")
+                continue
+            
+            # Analyze diversity metrics
+            metrics = self.diversity_analyzer.analyze(ticker, signals)
+            
+            # Route to appropriate alert type based on diversity context
+            if metrics.is_extreme_consensus:
+                # EXTREME RISK: Everyone agrees - reversal likely
+                await self._send_extreme_consensus_alert(ticker, signals, metrics)
+                await db.record_alert(ticker)
+                alerts_sent += 1
+                
+            elif metrics.is_echo_chamber:
+                # ECHO CHAMBER: Low diversity, herd mentality
+                await self._send_echo_chamber_alert(ticker, signals, metrics)
+                await db.record_alert(ticker)
+                alerts_sent += 1
+                
+            elif metrics.contrarian_opportunity:
+                # CONTRARIAN OPPORTUNITY: Strong minority view
+                await self._send_contrarian_alert(ticker, signals, metrics)
+                await db.record_alert(ticker)
+                alerts_sent += 1
+                
+            elif metrics.cross_platform_divergence:
+                # PLATFORM DIVERGENCE: Different platforms disagree
+                await self._send_divergence_alert(ticker, signals, metrics)
+                await db.record_alert(ticker)
+                alerts_sent += 1
+                
+            elif metrics.diversity_score >= 0.3 and len(set(s.source_name for s in signals)) >= 2:
+                # HEALTHY RESONANCE: Diverse sources agreeing (old logic, but stricter)
+                await self._send_healthy_resonance_alert(ticker, signals, metrics)
+                await db.record_alert(ticker)
+                alerts_sent += 1
+            else:
+                logger.debug(f"ℹ️ {ticker}: No significant pattern (diversity: {metrics.diversity_score:.2f})")
+        
+        return alerts_sent
+    
+    async def _send_extreme_consensus_alert(self, ticker: str, signals: List[Signal], metrics: DiversityMetrics):
+        """Alert when >80% consensus - reversal warning."""
+        majority = "BULLISH" if metrics.bullish_count > metrics.bearish_count else "BEARISH"
+        
+        msg = f"🚨 *EXTREME CONSENSUS RISK: {ticker}*\n"
+        msg += f"⚠️ {metrics.consensus_ratio*100:.0f}% {majority} - Reversal Likely!\n"
+        msg += "-------------------\n"
+        msg += f"📊 Diversity Score: {metrics.diversity_score:.2f} (Extreme)\n"
+        msg += f"🎯 Signals: {metrics.total_signals} total\n"
+        msg += f"   🟢 Bullish: {metrics.bullish_count}\n"
+        msg += f"   🔴 Bearish: {metrics.bearish_count}\n"
+        msg += "-------------------\n"
+        msg += "💡 *Insight*: When everyone agrees, everyone is wrong.\n"
+        msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        
+        await send_telegram_alert(msg)
+        logger.warning(f"🚨 Extreme consensus alert sent for {ticker}")
+    
+    async def _send_echo_chamber_alert(self, ticker: str, signals: List[Signal], metrics: DiversityMetrics):
+        """Alert for echo chamber detection."""
+        majority = "BULLISH" if metrics.bullish_count > metrics.bearish_count else "BEARISH"
+        
+        msg = f"📢 *ECHO CHAMBER WARNING: {ticker}*\n"
+        msg += f"⚠️ Herd mentality detected ({metrics.consensus_ratio*100:.0f}% {majority})\n"
+        msg += "-------------------\n"
+        msg += f"📊 Diversity Score: {metrics.diversity_score:.2f} (Low)\n"
+        msg += f"🎯 Sources agree too much - limited perspective\n"
+        msg += "-------------------\n"
+        msg += "💡 *Insight*: Diversify your information diet.\n"
+        msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        
+        await send_telegram_alert(msg)
+        logger.warning(f"📢 Echo chamber alert sent for {ticker}")
+    
+    async def _send_contrarian_alert(self, ticker: str, signals: List[Signal], metrics: DiversityMetrics):
+        """Alert for contrarian opportunity."""
+        # Find minority signals
+        if metrics.bullish_count < metrics.bearish_count:
+            minority_type = "BULLISH"
+            minority_signals = [s for s in signals if s.signal_type.value == "BULLISH"]
+        else:
+            minority_type = "BEARISH"
+            minority_signals = [s for s in signals if s.signal_type.value == "BEARISH"]
+        
+        msg = f"🎯 *CONTRARIAN OPPORTUNITY: {ticker}*\n"
+        msg += f"💎 Strong {minority_type} view in {metrics.consensus_ratio*100:.0f}% opposite market\n"
+        msg += "-------------------\n"
+        msg += f"📊 Contrarian Index: {metrics.contrarian_index:.2f}\n"
+        msg += f"🎯 Minority View:\n"
+        for s in minority_signals[:2]:
+            msg += f"   • {s.source_name}: {s.raw_text[:40]}...\n"
+        msg += "-------------------\n"
+        msg += "💡 *Insight*: The crowd is wrong at extremes.\n"
+        msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        
+        await send_telegram_alert(msg)
+        logger.info(f"🎯 Contrarian alert sent for {ticker}")
+    
+    async def _send_divergence_alert(self, ticker: str, signals: List[Signal], metrics: DiversityMetrics):
+        """Alert for cross-platform sentiment divergence."""
+        msg = f"📊 *PLATFORM DIVERGENCE: {ticker}*\n"
+        msg += "⚠️ Different platforms show different sentiments\n"
+        msg += "-------------------\n"
+        msg += f"🎯 Mainstream: {metrics.mainstream_sentiment.value if metrics.mainstream_sentiment else 'N/A'}\n"
+        msg += f"🎯 Contrarian: {metrics.contrarian_sentiment.value if metrics.contrarian_sentiment else 'N/A'}\n"
+        msg += "-------------------\n"
+        msg += "💡 *Insight*: Smart money vs retail divergence.\n"
+        msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        
+        await send_telegram_alert(msg)
+        logger.info(f"📊 Divergence alert sent for {ticker}")
+    
+    async def _send_healthy_resonance_alert(self, ticker: str, signals: List[Signal], metrics: DiversityMetrics):
+        """Alert for healthy resonance (diverse sources agreeing)."""
+        msg = f"✅ *HEALTHY RESONANCE: {ticker}*\n"
+        msg += f"📊 Diverse sources reaching consensus\n"
+        msg += "-------------------\n"
+        msg += f"🎯 Diversity Score: {metrics.diversity_score:.2f} (Good)\n"
+        msg += f"📈 Consensus: {metrics.consensus_ratio*100:.0f}%\n"
+        for s in signals[:3]:
+            icon = "🟢" if s.signal_type.value == "BULLISH" else "🔴" if s.signal_type.value == "BEARISH" else "⚪️"
+            msg += f"{icon} {s.source_name}\n"
+        msg += "-------------------\n"
+        msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        
+        await send_telegram_alert(msg)
+        logger.info(f"✅ Healthy resonance alert sent for {ticker}")
+    
+    async def _legacy_resonance_check(self, db) -> int:
+        """Fallback to old logic if diversity analyzer unavailable."""
+        recent_signals = await db.get_recent_signals(hours=24)
+        ticker_counts: Dict[str, List[Signal]] = {}
         
         for sig in recent_signals:
             if sig.ticker not in ticker_counts:
                 ticker_counts[sig.ticker] = []
             ticker_counts[sig.ticker].append(sig)
-            
-        # Check threshold
+        
+        alerts_sent = 0
         for ticker, sigs in ticker_counts.items():
-            # Check if we already alerted this ticker recently - async
             is_alerted = await db.is_alerted_recently(ticker)
             if is_alerted:
-                logger.debug(f"🤫 Suppressing alert for {ticker} (already sent in last 24h)")
                 continue
-
-            sources_involved = set(s.source_name for s in sigs)
             
+            sources_involved = set(s.source_name for s in sigs)
             if len(sources_involved) >= 2:
-                logger.warning(f"🚨 RESONANCE DETECTED FOR {ticker}!")
-                
-                # Format Alert
-                msg = f"🚨 *信号共振报警: {ticker}*\n"
-                msg += "-------------------\n"
-                for s in sigs:
-                    icon = "🟢" if "BULLISH" in s.signal_type else "🔴" if "BEARISH" in s.signal_type else "⚪️"
-                    # Format time as relative or short
-                    time_str = s.timestamp.strftime('%H:%M')
-                    msg += f"{icon} *{s.source_name}* ({time_str}): {s.signal_type}\n"
-                    msg += f"   \"{s.raw_text[:50]}...\"\n"
-                msg += "-------------------\n"
-                msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-                
+                msg = f"🚨 *信号共振: {ticker}*\n"
+                for s in sigs[:3]:
+                    icon = "🟢" if s.signal_type.value == "BULLISH" else "🔴"
+                    msg += f"{icon} {s.source_name}\n"
                 await send_telegram_alert(msg)
-                await db.record_alert(ticker)  # Record alert - async
+                await db.record_alert(ticker)
                 alerts_sent += 1
-            else:
-                logger.debug(f"ℹ️ {ticker} mentioned by {len(sources_involved)} source(s). No resonance.")
         
         return alerts_sent
