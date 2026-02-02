@@ -1,4 +1,4 @@
-# PROJECT_PLAN.md - Signal Hunter Project Tracker
+# ROADMAP.md - Signal Hunter Roadmap
 
 This file serves as the temporary, local master plan until GitHub integration is fully operational.
 
