@@ -1,0 +1,1 @@
+[guardian.sh 内容]
