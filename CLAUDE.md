@@ -2,9 +2,73 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## 🚨 CRITICAL: Git Worktree Development Mode
 
-Signal Hunter is an async Python-based financial intelligence system that monitors financial KOLs (Key Opinion Leaders) across social media platforms to extract trading signals and generate market intelligence reports.
+**IMPORTANT**: This repository uses Git worktrees for multi-agent parallel development. DO NOT use standard `git merge` or `git checkout` commands. Always use worktree-specific workflows as described below.
+
+### Current Worktree Setup
+This worktree (`/Users/Jacob/clawd-claude`) is configured for the **claude** branch. You cannot switch branches here - use other worktree directories for different branches.
+
+### Worktree-Specific Git Commands
+✅ **CORRECT**: `git push origin claude:main`  # Push to remote main
+❌ **WRONG**:  `git merge main`               # Will fail in worktree
+❌ **WRONG**:  `git checkout main`             # Will fail in worktree
+
+For branch synchronization, always use **push-pull workflow** between worktrees.
+
+## Git Worktree 开发模式（多代理并发专用术语）
+
+### 核心概念
+- **工作树锁定**: 每个工作树固定绑定一个分支，不能切换
+- **推送合并**: 通过 `git push` 到远程分支实现间接合并
+- **跨树同步**: 在其他工作树中 `git pull` 获取更新
+- **代理隔离**: 多代理在不同工作树中并行开发，避免直接冲突
+
+### 必须使用的专业术语
+
+#### 操作术语
+- **"推送同步"** (Push-Sync)：使用 `git push origin branch:target` 推送更改
+- **"拉取更新"** (Pull-Update)：在其他工作树中执行 `git pull origin branch`
+- **"跨树通知"** (Cross-Tree Notification)：告知其他代理推送了更改
+- **"工作树隔离"** (Worktree Isolation)：当前工作树独立于其他代理的环境
+
+#### 禁止术语（会导致错误）
+- ❌ 不要使用 "切换分支"
+- ❌ 不要使用 "合并分支"
+- ❌ 不要使用 "检出代码"
+- ❌ 不要假设可以 `git merge` 或 `git checkout`
+
+### 标准工作流程
+
+1. **当前代理完成任务**
+   ```bash
+   git add .
+   git commit -m "描述: 具体更改内容"
+   git push origin 分支名:目标分支
+   ```
+
+2. **通知其他代理**（通过用户或系统）
+
+003e "已完成推送同步，请在主工作树执行拉取更新"
+
+3. **其他代理同步**
+   ```bash
+   # 在主工作树或其他相关工作树中
+   git pull origin 目标分支
+   ```
+
+### 代理间一致性协议
+
+- **推送后立即通知**：完成更改后必须告知其他代理
+- **明确目标分支**：总是指定具体的源分支和目标分支
+- **状态确认**：确认其他代理已接收更新
+- **冲突预防**：避免多代理同时修改相同文件
+
+### 当前工作树配置
+- **当前位置**: `/Users/Jacob/clawd-claude`
+- **绑定分支**: `claude`
+- **可推送至**: `main`（生产分支）、`claude`（保持同步）
+- **其他工作树**: `/Users/Jacob/clawd` (main分支主工作空间)
 
 ## Common Development Commands
 
