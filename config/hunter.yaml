@@ -1,0 +1,46 @@
+topics:
+  - name: "AI & Tech"
+    keywords:
+      - "AI Agents"
+      - "LLM"
+      - "DeepSeek"
+      - "OpenAI"
+      - "Generative AI"
+      - "Python Tools"
+    sources:
+      - type: "web"
+        query: "latest artificial intelligence news tools"
+      - type: "twitter"
+        query: "(#AI OR #Tech) min_faves:500"
+
+  - name: "Macro & Finance"
+    keywords:
+      - "Gold Price"
+      - "Silver Price"
+      - "XAUUSD"
+      - "XAGUSD"
+      - "Federal Reserve"
+      - "Inflation CPI"
+      - "US Economy"
+    sources:
+      - type: "web"
+        query: "gold silver price market analysis macro economics"
+      - type: "twitter"
+        query: "(#Gold OR #Silver OR #Macro) min_faves:200"
+      - type: "twitter-user"
+        query: "@ZeroHedge"
+      - type: "twitter-user"
+        query: "@GoldTelegraph_"
+      - type: "twitter-user"
+        query: "@SchiffGold"
+
+  - name: "Daily Hotspots"
+    keywords:
+      - "Trending"
+      - "Breaking News"
+      - "Viral"
+    sources:
+      - type: "web"
+        query: "global trending news today"
+      - type: "twitter"
+        query: "filter:verified min_retweets:1000"
