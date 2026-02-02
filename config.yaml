@@ -4,7 +4,7 @@
 # Telegram 配置
 telegram:
   bot_token: "8413946900:AAHQY7dL13YnHYFMj6mgJKKh8dCoLhsvkM8"  # 从 .env 读取，这里只是示例
-  channel_id: "-1002340655079"  # 频道ID（从 .env 读取）
+  channel_id: "-1003848721376"  # 频道ID（从 .env 读取）
   admin_chat_id: "909643416"    # 管理员私聊ID
 
 # 扫描频率（分钟）
