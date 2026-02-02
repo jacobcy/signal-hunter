@@ -6,6 +6,9 @@ from src.core.fetcher import FetcherFactory
 
 app = typer.Typer()
 
+# Signal Hunter version
+VERSION = "0.2.0-worktree"
+
 from src.core.engine import Engine
 
 @app.command()
@@ -13,6 +16,7 @@ def run():
     """
     Run the main Signal Hunter engine cycle.
     """
+    logger.info(f"🚀 Signal Hunter v{VERSION} starting...")
     engine = Engine()
     engine.load_sources_from_memory()
     asyncio.run(engine.run_cycle())
