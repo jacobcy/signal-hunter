@@ -38,6 +38,12 @@ Thumbs.db
 temp/
 tmp/
 *.tmp
+tmp_signal.txt
+dry_run_output.json
+
+# Local agent memory/artifacts
+memory/
+agents/ops-daemon/
 
 # Debug
 debug_*.py
