@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 """
-Skill Discovery - HR tool for discovering new OpenClaw skills
+Skill Discovery - Discover and create OpenClaw skills
 
 Usage:
-    python skill_discovery.py --category finance    # Search by category
-    python skill_discovery.py --keyword "test"      # Search by keyword
-    python skill_discovery.py --list-categories     # List all categories
-    python skill_discovery.py --recommend <role>    # Recommend for role
-    python skill_discovery.py --trending            # Show trending skills
+    ./skill_discovery.py search <keyword>     # Search for skills by keyword
+    ./skill_discovery.py create <skill-name>  # Scaffold a new skill
+    ./skill_discovery.py list                 # List all available categories
+    ./skill_discovery.py trending             # Show trending skills
+    ./skill_discovery.py recommend <role>     # Get skill recommendations for a role
 
-This is an HR tool for discovering and evaluating new skills for the AI team.
+This tool helps you discover existing skills and create new ones for OpenClaw.
 """
 
 import argparse
 import re
 import sys
+import os
+from pathlib import Path
 from typing import List, Dict, Optional
 from urllib.request import urlopen
 from urllib.error import URLError
@@ -102,34 +104,6 @@ def list_categories():
     print("=" * 60)
     print(f"\nTotal categories: {len(categories)}")
     print(f"Total skills: {sum(len(s) for s in categories.values())}")
-
-
-def search_by_category(category_query: str):
-    """Search skills by category name."""
-    content = fetch_awesome_list()
-    categories = parse_categories(content)
-    
-    # Find matching categories (case-insensitive partial match)
-    matching = {
-        cat: skills for cat, skills in categories.items()
-        if category_query.lower() in cat.lower()
-    }
-    
-    if not matching:
-        print(f"\n⚠️  No categories matching '{category_query}'")
-        print("\nUse --list-categories to see all available categories")
-        return
-    
-    print(f"\n🔍 Skills in categories matching '{category_query}':")
-    print("=" * 70)
-    
-    for category, skills in matching.items():
-        print(f"\n📁 {category} ({len(skills)} skills)")
-        print("-" * 70)
-        for skill in skills[:10]:  # Show first 10
-            print(f"  • {skill['name']:<25} - {skill['description'][:50]}...")
-        if len(skills) > 10:
-            print(f"  ... and {len(skills) - 10} more")
 
 
 def search_by_keyword(keyword: str):
@@ -242,136 +216,141 @@ def show_trending():
         print(f"    {skill['description'][:55]}...")
 
 
-def generate_skill_report():
-    """Generate comprehensive skill landscape report for HR."""
-    content = fetch_awesome_list()
-    categories = parse_categories(content)
+def create_skill_scaffold(skill_name: str):
+    """Create a new skill scaffold directory structure."""
+    if not skill_name or not skill_name.strip():
+        print("❌ Error: Please provide a valid skill name")
+        return False
     
-    report_lines = []
-    report_lines.append("=" * 70)
-    report_lines.append("📊 SKILL DISCOVERY REPORT (HR)")
-    report_lines.append("Source: awesome-openclaw-skills")
-    report_lines.append("=" * 70)
+    skill_name = skill_name.strip()
     
-    report_lines.append(f"\n📈 OVERVIEW")
-    report_lines.append(f"   Total Categories: {len(categories)}")
-    report_lines.append(f"   Total Skills: {sum(len(s) for s in categories.values())}")
+    # Validate skill name (basic validation)
+    if not re.match(r'^[a-zA-Z0-9_-]+$', skill_name):
+        print("❌ Error: Skill name can only contain letters, numbers, hyphens, and underscores")
+        return False
     
-    report_lines.append(f"\n📚 TOP CATEGORIES BY SIZE")
-    sorted_cats = sorted(categories.items(), key=lambda x: len(x[1]), reverse=True)
-    for cat, skills in sorted_cats[:10]:
-        report_lines.append(f"   {cat:<35} {len(skills):3} skills")
+    skill_dir = Path("skills") / skill_name
     
-    report_lines.append(f"\n🎯 HIGH-VALUE SKILLS FOR OUR TEAM")
+    if skill_dir.exists():
+        print(f"❌ Error: Skill directory '{skill_name}' already exists")
+        return False
     
-    # Key skills we might need
-    key_categories = [
-        'Coding Agents & IDEs',
-        'DevOps & Cloud', 
-        'Git & GitHub',
-        'Finance',
-        'AI & LLMs',
-        'Search & Research'
-    ]
-    
-    for cat_name in key_categories:
-        for cat, skills in categories.items():
-            if cat_name.lower() in cat.lower():
-                report_lines.append(f"\n   {cat}:")
-                for skill in skills[:3]:
-                    report_lines.append(f"      • {skill['name']}")
-    
-    report_lines.append("\n" + "=" * 70)
-    report_lines.append("💡 HR RECOMMENDATIONS")
-    report_lines.append("   1. Review Finance category for trading-related skills")
-    report_lines.append("   2. Check DevOps & Cloud for deployment automation")
-    report_lines.append("   3. Explore AI & LLMs for advanced capabilities")
-    report_lines.append("=" * 70)
-    
-    report = "\n".join(report_lines)
-    print(report)
-    
-    # Save report
-    from pathlib import Path
-    from datetime import datetime
-    report_dir = Path("memory/reports")
-    report_dir.mkdir(parents=True, exist_ok=True)
-    report_file = report_dir / f"skill-discovery-{datetime.now().strftime('%Y-%m-%d')}.md"
-    report_file.write_text(report)
-    print(f"\n💾 Report saved to: {report_file}")
+    try:
+        # Create the skill directory
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create SKILL.md
+        skill_md_content = f"""# {skill_name}
+
+## Description
+Brief description of what this skill does.
+
+## Tools
+List of tools provided by this skill:
+
+- **tool_name**: Brief description of what the tool does
+
+## Usage
+How to use this skill:
+
+```python
+# Example usage
+```
+
+## Dependencies
+Any dependencies required for this skill.
+
+## Configuration
+Any configuration options for this skill.
+"""
+        (skill_dir / "SKILL.md").write_text(skill_md_content)
+        
+        # Create __init__.py
+        (skill_dir / "__init__.py").write_text("# Skill initialization\n")
+        
+        # Create main.py (optional but recommended)
+        main_py_content = f'''"""
+Main module for the {skill_name} skill.
+"""
+'''
+        (skill_dir / "main.py").write_text(main_py_content)
+        
+        print(f"✅ Successfully created skill scaffold: {skill_name}")
+        print(f"📁 Directory: {skill_dir}")
+        print(f"📄 Files created:")
+        print(f"   - SKILL.md (documentation)")
+        print(f"   - __init__.py (package initialization)")
+        print(f"   - main.py (main module)")
+        print(f"\n📝 Next steps:")
+        print(f"   1. Edit SKILL.md to document your skill")
+        print(f"   2. Implement your tools in main.py")
+        print(f"   3. Add tool definitions to your skill's __init__.py")
+        print(f"   4. Test your skill locally")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error creating skill scaffold: {e}")
+        return False
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="HR Skill Discovery - Find new OpenClaw skills",
+        description="Discover and create OpenClaw skills",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Search for testing-related skills
-  python skill_discovery.py --keyword "test"
+  # Search for skills containing "finance"
+  ./skill_discovery.py search finance
   
-  # List all Finance skills
-  python skill_discovery.py --category "Finance"
+  # Create a new skill called "my-awesome-skill"
+  ./skill_discovery.py create my-awesome-skill
   
-  # Get recommendations for Dev role
-  python skill_discovery.py --recommend dev
+  # List all available skill categories
+  ./skill_discovery.py list
   
-  # Generate full discovery report
-  python skill_discovery.py --report
+  # Get recommendations for a developer role
+  ./skill_discovery.py recommend dev
         """
     )
     
-    parser.add_argument(
-        "--category",
-        metavar="NAME",
-        help="Search skills by category (e.g., 'Finance', 'DevOps')"
-    )
-    parser.add_argument(
-        "--keyword",
-        metavar="WORD",
-        help="Search skills by keyword in name/description"
-    )
-    parser.add_argument(
-        "--list-categories",
-        action="store_true",
-        help="List all available categories"
-    )
-    parser.add_argument(
-        "--recommend",
-        metavar="ROLE",
-        choices=['dev', 'qa', 'ops', 'analyst', 'editor', 'pm', 'hr'],
-        help="Recommend skills for a role (dev/qa/ops/analyst/editor/pm/hr)"
-    )
-    parser.add_argument(
-        "--trending",
-        action="store_true",
-        help="Show trending/recent skills"
-    )
-    parser.add_argument(
-        "--report",
-        action="store_true",
-        help="Generate comprehensive discovery report"
-    )
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # Search command
+    search_parser = subparsers.add_parser('search', help='Search for skills by keyword')
+    search_parser.add_argument('keyword', help='Keyword to search for in skill names, descriptions, or categories')
+    
+    # Create command
+    create_parser = subparsers.add_parser('create', help='Scaffold a new skill')
+    create_parser.add_argument('skill_name', help='Name of the new skill to create')
+    
+    # List command
+    list_parser = subparsers.add_parser('list', help='List all available skill categories')
+    
+    # Trending command
+    trending_parser = subparsers.add_parser('trending', help='Show trending/recently added skills')
+    
+    # Recommend command
+    recommend_parser = subparsers.add_parser('recommend', help='Get skill recommendations for a role')
+    recommend_parser.add_argument('role', choices=['dev', 'qa', 'ops', 'analyst', 'editor', 'pm', 'hr'],
+                                 help='Role to get recommendations for')
     
     args = parser.parse_args()
     
-    if args.list_categories:
-        list_categories()
-    elif args.category:
-        search_by_category(args.category)
-    elif args.keyword:
-        search_by_keyword(args.keyword)
-    elif args.recommend:
-        recommend_for_role(args.recommend)
-    elif args.trending:
-        show_trending()
-    elif args.report:
-        generate_skill_report()
-    else:
+    if not args.command:
         parser.print_help()
-        print("\n\n💡 Quick Start:")
-        print("  python skill_discovery.py --list-categories")
-        print("  python skill_discovery.py --keyword ")
+        return
+    
+    if args.command == 'search':
+        search_by_keyword(args.keyword)
+    elif args.command == 'create':
+        create_skill_scaffold(args.skill_name)
+    elif args.command == 'list':
+        list_categories()
+    elif args.command == 'trending':
+        show_trending()
+    elif args.command == 'recommend':
+        recommend_for_role(args.role)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,36 @@
+{
+  "name": "clawd-ops",
+  "version": "1.0.0",
+  "description": "Unified Operations Toolkit for OpenClaw workspace",
+  "commands": {
+    "health": {
+      "description": "Run comprehensive system health checks",
+      "handler": "scripts/ops/clawd-ops.py",
+      "args": ["health"]
+    },
+    "setup-env": {
+      "description": "Set up and activate development environment",
+      "handler": "scripts/setup_env.sh",
+      "shell": true
+    },
+    "test-assets": {
+      "description": "Test critical infrastructure assets",
+      "handler": "scripts/ops/clawd-ops.py",
+      "args": ["test-assets"]
+    },
+    "daily-check": {
+      "description": "Run comprehensive daily project health checks",
+      "handler": "scripts/ops/clawd-ops.py",
+      "args": ["daily-check"]
+    },
+    "daily-check-telegram": {
+      "description": "Run daily checks with Telegram notification",
+      "handler": "scripts/ops/clawd-ops.py",
+      "args": ["daily-check-telegram"]
+    }
+  },
+  "dependencies": {
+    "python": ">=3.8",
+    "packages": ["python-dotenv"]
+  }
+}
