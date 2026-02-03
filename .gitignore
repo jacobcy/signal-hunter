@@ -47,3 +47,5 @@ agents/ops-daemon/
 
 # Debug
 debug_*.py
+.aider*
+.venv/
