@@ -1,65 +1,37 @@
-# WORKFLOW.md - The AI Development Lifecycle
+# WORKFLOW.md - The Trinity Workflow
 
-## 1. Inception (可行性研究)
-**Actors:** User + PM + Analyst
-- **Trigger:** User has an idea (e.g., "Add crypto tracking").
-- **Action:**
-  - PM analyzes intent.
-  - Analyst checks data availability (e.g., "Do we have an API for this?").
-  - **Output:** Feasibility Report (Go/No-Go).
+## 🔄 The Cycle (Observe - Evaluate - Plan - Act)
 
-## 2. Definition (产品定义)
-**Actors:** PM + Analyst
-- **Action:** Create a Product Requirement Document (PRD).
-- **PRD Content:**
-  - **Goal:** One-line objective.
-  - **User Stories:** "As a user, I want..."
-  - **Technical Specs:** API endpoints, data structures.
-  - **Success Metrics:** "Script runs without error and outputs JSON."
-- **Output:** `tasks/XXX_task_name.md`.
+### Phase 1: Definition (PM)
+1. User provides intent.
+2. PM creates/updates a PRD in `tasks/`.
+3. PM selects the right "Squad" members.
 
-## 3. Approval (批准)
-**Actors:** User + PM
-- **Action:** PM presents PRD to User.
-- **Output:** `APPROVED` signal.
+### Phase 2: Execution (The Trinity Split)
 
-## 4. Preparation (技能准备)
-**Actors:** PM + Ops + Scout
-- **Action:**
-  - Check if we have required skills (`openclaw skills list`).
-  - If missing, Scout finds the best tool/library.
-  - Ops installs dependencies (`pip install`, `brew install`).
-- **Output:** Environment ready.
+#### Track A: Development (Claude)
+- **Role:** Lead Dev.
+- **Action:** Reads PRD, writes implementation code in `src/`.
+- **Tool:** `claude-code` or `sessions_spawn(model="claude")`.
 
-## 5. Construction (开发)
-**Actors:** Dev (0xCAFE)
-- **Tool:** Aider / Codex
-- **Action:**
-  - Read PRD (`tasks/XXX.md`).
-  - Write code in `scripts/` or `src/`.
-  - Local unit testing.
-- **Output:** Source code committed to git feature branch.
+#### Track B: Verification (Codex)
+- **Role:** QA Engineer.
+- **Action:** Reads PRD, writes unit/integration tests in `tests/`.
+- **Tool:** `codex-orchestration` or `sessions_spawn(model="gpt-4")`.
 
-## 6. Verification (测试 & 验收)
-**Actors:** QA (Bugsy)
-- **Tool:** OpenCode
-- **Action:**
-  - Pull branch.
-  - Run `pytest` or execution script.
-  - Verify output matches PRD.
-- **Output:** Test Report (Pass/Fail).
+#### Track C: Support & Audit (Aider/DeepSeek)
+- **Role:** Analyst / Tool Smith.
+- **Action:** 
+    - Scans `skills/` for misconfigurations.
+    - Analyzes data logs from `logs/`.
+    - Fixes environment issues blocking Dev/QA.
+- **Tool:** `aider` CLI.
 
-## 7. Delivery & Monitoring (交付 & 监控)
-**Actors:** Ops (Daemon)
-- **Action:**
-  - Merge to `main`.
-  - Deploy (if service).
-  - Add to `scripts/system_health.py` monitoring list.
-  - Schedule Cron Job (if periodic).
-- **Output:** Live system.
+### Phase 3: Convergence
+1. Tests run against implementation.
+2. If Pass -> PM merges/deploys.
+3. If Fail -> Feedback loop to Dev (Claude).
 
-## 8. Evolution (持续进化)
-**Actors:** Researcher + Analyst
-- **Trigger:** Weekly Cron.
-- **Action:** Scan for updates/better tools.
-- **Output:** Update Proposal.
+## 🛠 Tool Optimization Protocol
+- **Audit:** Aider regularly scans `skills/` to ensure paths are correct and dependencies are met.
+- **Usage:** Prefer specific skills (e.g., `github`, `files`) over generic shell commands when possible to reduce error rates.

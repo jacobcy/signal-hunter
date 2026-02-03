@@ -17,8 +17,12 @@
   - Adopted strict "Task Delegation" workflow where the PM orchestrates and delegates to all specialized agents.
   - Prioritized `scripts/system_health.py` as the "conscience" of the system.
   - Established `aider` (DeepSeek) as the primary coding engine in `~/aider-env`.
-- **2026-02-02:**
-  - **Framework Refactor:** Adopted "The Trinity Framework" (PRD-001): Layer 1 Infrastructure (Guardian), Layer 2 Capability (Hunter), Layer 3 Application (Analyst).
+- **2026-02-03:**
+  - **Tooling Strategy Update:** 
+    - **Claude:** Lead Developer (Logic/Architecture).
+    - **Codex:** QA/Tester (Test generation, blindly checking Claude's work).
+    - **Aider/DeepSeek:** Data Analyst & Skill Auditor (Config checks, log analysis).
+  - **Focus:** Optimization of Skill/Tool configurations using Aider.
   - **Standard Operating Procedure (SOP):** Solidified the parallel, non-blocking development model.
     - **Delegation:** PM delegates to sub-agents (Dev/QA/Ops) for execution.
     - **Parallelism:** Dev writes code while QA writes tests; no blocking.
