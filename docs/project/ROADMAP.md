@@ -1,53 +1,24 @@
-# ROADMAP.md - Signal Hunter Roadmap
+# Project Roadmap
 
-This file serves as the temporary, local master plan until GitHub integration is fully operational.
+## Phase 1: Foundation & User Management (Current)
+- [ ] **Epic: User Management System** (PRD-002)
+    - [ ] Define User Roles (Owner, Contributor, Subscriber)
+    - [ ] Implement `UserManager` class (`src/auth/user_manager.py`)
+    - [ ] Create persistent storage (`memory/users.json`)
+    - [ ] Implement CLI/Bot commands (`/register`, `/report`, `/promote`)
+    - [ ] Add basic unit tests
 
-## 🎯 Strategic Goal
-Elevate the system's data sourcing quality, analytical depth, and report professionalism.
+## Phase 2: Core Capability Expansion (Planned)
+- [ ] **Epic: Knowledge Base Integration**
+    - [ ] RAG implementation for documentation
+    - [ ] Vector store setup
+- [ ] **Epic: Enhanced Tooling**
+    - [ ] Better browser automation profiles
+    - [ ] Advanced file editing capabilities
 
-## 📋 Epics & Tasks
-
-### Epic 1: Data Quality & Analysis Professionalism Upgrade
-
-#### Task 1.1: KOL Credibility Scoring
-- **Objective:** Assign scores to KOLs based on historical accuracy.
-- **Owner:** Analyst (Lens)
-- **Status:** Planned
-- **GitHub Issue:** TODO (when GH auth fixed)
-
-#### Task 1.2: Multi-Source Data Verification
-- **Objective:** Cross-check signals from multiple sources.
-- **Owner:** Hunter (Core)
-- **Status:** Planned
-- **GitHub Issue:** TODO (when GH auth fixed)
-
-#### Task 1.3: Enhanced Sentiment Analysis
-- **Objective:** Quantify bullish/bearish sentiment from KOLs.
-- **Owner:** Analyst (Lens)
-- **Status:** Planned
-- **GitHub Issue:** TODO (when GH auth fixed)
-
-#### Task 1.4: Professional Report Template
-- **Objective:** Design a structured, professional report format.
-- **Owner:** Reporter (Scribe)
-- **Status:** Planned
-- **GitHub Issue:** TODO (when GH auth fixed)
-
-## 📊 Milestones
-
-### Milestone 1: Foundation (Current State)
-- [x] System Health Guardian (Task 001)
-- [x] Hunter Core & KOL Tracking (Task 002/003)
-- [x] Notification & Reporting Modularity (Task 004/005/006)
-
-### Milestone 2: Professionalism (Next Phase)
-- [ ] Task 1.1: KOL Credibility Scoring
-- [ ] Task 1.2: Multi-Source Data Verification
-- [ ] Task 1.3: Enhanced Sentiment Analysis
-- [ ] Task 1.4: Professional Report Template
-
-## 🔧 Action Items
-
-- [ ] Fix GitHub Token permissions to enable remote issue tracking.
-- [ ] Migrate this plan to GitHub Issues/Projects.
-- [ ] Set up automated workflows (e.g., close issue on PR merge).
+## Phase 3: Autonomy & Optimization (Future)
+- [ ] **Epic: Self-Correction Loops**
+    - [ ] Automated error analysis
+    - [ ] Test-driven development workflows
+- [ ] **Epic: Multi-Agent Delegation**
+    - [ ] Spawning specialized sub-agents for research/coding

@@ -71,12 +71,15 @@ class Teleporter:
         if not token:
             logger.error("❌ TELEGRAM_BOT_TOKEN not set")
             return False
+
+        # Wrap the entire message in a code block to avoid Markdown parsing issues
+        message_text_formatted = f"```{message_text}```"
             
         url = f"https://api.telegram.org/bot{token}/sendMessage"
         payload = {
             "chat_id": chat_id,
-            "text": message_text,
-            "parse_mode": "Markdown"
+            "text": message_text_formatted,
+            "parse_mode": "MarkdownV2"
         }
         
         try:
@@ -99,20 +102,22 @@ class Teleporter:
 
     def _send_with_urllib(self, message_text: str, chat_id: str) -> bool:
         """Fallback method: Send message using urllib."""
+        import urllib.request
+
         token = os.getenv("TELEGRAM_BOT_TOKEN")
         
         if not token:
             logger.error("❌ TELEGRAM_BOT_TOKEN not set")
             return False
-            
-        import urllib.request
-        import urllib.parse
+
+        # Wrap the entire message in a code block to avoid Markdown parsing issues
+        message_text_formatted = f"```{message_text}```"
 
         url = f"https://api.telegram.org/bot{token}/sendMessage"
         payload = {
             "chat_id": chat_id,
-            "text": message_text,
-            "parse_mode": "Markdown"
+            "text": message_text_formatted,
+            "parse_mode": "MarkdownV2"
         }
         
         data = json.dumps(payload).encode('utf-8')

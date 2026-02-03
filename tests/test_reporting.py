@@ -7,9 +7,16 @@ Tests for Teleporter and ReportBuilder classes.
 import pytest
 import asyncio
 import os
+import sys
+import urllib.request
 from unittest.mock import patch, MagicMock, AsyncMock
+
+# Ensure project root is on sys.path for src/ and scripts/ imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from src.utils.teleporter import Teleporter
 from src.utils.reporter import ReportBuilder, ReportFormatter
+from src.utils.notifier import send_telegram_alert
 
 
 class TestReportBuilder:
@@ -92,6 +99,7 @@ class TestReportBuilder:
         assert "📈 **Market Signal:** Price increase detected" in result
         assert "💡 **Reason:** Market demand surge" in result
         assert "#OpenClaw #MarketSignal" in result
+        assert "Mission Update" not in result
 
     def test_build_market_signal_with_audit(self):
         """Test market signal with audit field."""
@@ -111,6 +119,7 @@ class TestReportBuilder:
         
         assert "🤖 **AI Brief: Market trend identified**" in result
         assert "#OpenClaw #AIBrief" in result
+        assert "Mission Update" not in result
 
     def test_build_ai_brief_with_all_fields(self):
         """Test AI brief with all optional fields."""
@@ -199,19 +208,18 @@ class TestTeleporter:
             del os.environ["TELEGRAM_CHANNEL_ID"]
 
     @patch('src.utils.teleporter.logger')
-    @patch('httpx.AsyncClient.post')
     @patch('builtins.__import__')
-    def test_send_with_httpx_success(self, mock_import, mock_post, mock_logger):
+    def test_send_with_httpx_success(self, mock_import, mock_logger):
         """Test successful message sending via httpx."""
         # Mock httpx import to succeed
         def import_side_effect(name, *args, **kwargs):
             if name == 'httpx':
                 mock_httpx = MagicMock()
-                mock_async_client = AsyncMock()
+                mock_client = AsyncMock()
                 mock_response = MagicMock()
                 mock_response.status_code = 200
-                mock_async_client.post.return_value.__aenter__.return_value = mock_response
-                mock_httpx.AsyncClient.return_value = mock_async_client
+                mock_client.post.return_value = mock_response
+                mock_httpx.AsyncClient.return_value.__aenter__.return_value = mock_client
                 return mock_httpx
             # For any other import, raise ImportError to simulate the actual import
             if name in ['urllib.request', 'urllib.parse']:
@@ -234,30 +242,13 @@ class TestTeleporter:
 
     @patch('src.utils.teleporter.logger')
     @patch('urllib.request.urlopen')
-    @patch('builtins.__import__')
-    def test_send_with_urllib_success(self, mock_import, mock_urlopen, mock_logger):
+    def test_send_with_urllib_success(self, mock_urlopen, mock_logger):
         """Test successful message sending via urllib."""
         # Mock urllib components
         mock_request = MagicMock()
         mock_response = MagicMock()
         mock_response.status = 200
         mock_urlopen.return_value.__enter__.return_value = mock_response
-        
-        # Set up the import mock to fail on httpx but succeed on urllib
-        def import_side_effect(name, *args, **kwargs):
-            if name == 'httpx':
-                raise ImportError("No module named 'httpx'")
-            elif name == 'urllib.request':
-                import urllib.request
-                return urllib.request
-            elif name == 'urllib.parse':
-                import urllib.parse
-                return urllib.parse
-            # For other modules, use the original import
-            return __import__(name, *args, **kwargs)
-        
-        mock_import.side_effect = import_side_effect
-        mock_import.urllib = urllib
 
         teleporter = Teleporter()
         result = teleporter._send_with_urllib("Test message", "test_chat_id")
@@ -360,6 +351,126 @@ class TestTeleporter:
         assert mock_send_message.call_count == 3  # Called max_attempts times
         # Verify error was logged
         # Note: We can't easily test the logger call here since it's in the class method
+
+    @patch('src.utils.teleporter.Teleporter._send_with_urllib')
+    @patch('src.utils.teleporter.Teleporter._send_with_httpx', new_callable=AsyncMock)
+    def test_send_message_fallback_to_urllib(self, mock_httpx, mock_urllib):
+        """Test send_message falls back to urllib when httpx fails."""
+        mock_httpx.return_value = False
+        mock_urllib.return_value = True
+
+        teleporter = Teleporter()
+
+        async def run_test():
+            return await teleporter.send_message("Test message", "test_chat_id")
+
+        result = asyncio.run(run_test())
+
+        assert result is True
+        mock_httpx.assert_called_once()
+        mock_urllib.assert_called_once()
+
+    @patch('src.utils.teleporter.Teleporter._send_with_httpx', new_callable=AsyncMock)
+    def test_send_message_uses_target_id(self, mock_httpx):
+        """Test send_message uses provided target_id over env."""
+        mock_httpx.return_value = True
+        os.environ["TELEGRAM_CHANNEL_ID"] = "env_channel"
+
+        teleporter = Teleporter()
+
+        async def run_test():
+            return await teleporter.send_message("Test message", "override_chat")
+
+        result = asyncio.run(run_test())
+
+        assert result is True
+        mock_httpx.assert_called_once_with("Test message", "override_chat")
+
+
+class TestNotifier:
+    """Tests for send_telegram_alert in notifier."""
+
+    def setup_method(self):
+        os.environ["TELEGRAM_BOT_TOKEN"] = "test_token"
+        os.environ["TELEGRAM_CHANNEL_ID"] = "test_channel_id"
+
+    def teardown_method(self):
+        if "TELEGRAM_BOT_TOKEN" in os.environ:
+            del os.environ["TELEGRAM_BOT_TOKEN"]
+        if "TELEGRAM_CHANNEL_ID" in os.environ:
+            del os.environ["TELEGRAM_CHANNEL_ID"]
+        if "TELEGRAM_CHAT_ID" in os.environ:
+            del os.environ["TELEGRAM_CHAT_ID"]
+
+    @patch("src.utils.notifier.logger")
+    @patch("src.utils.notifier._teleporter.send_with_retry", new_callable=AsyncMock)
+    def test_send_telegram_alert_success(self, mock_send, mock_logger):
+        """Test notifier sends message successfully."""
+        mock_send.return_value = True
+
+        async def run_test():
+            await send_telegram_alert("Hello")
+
+        asyncio.run(run_test())
+
+        mock_send.assert_called_once_with("Hello", "test_channel_id")
+        mock_logger.info.assert_called_with("📢 Telegram alert sent successfully.")
+
+    @patch("src.utils.notifier.os.path.exists", return_value=False)
+    @patch("src.utils.notifier.os.getenv")
+    @patch("src.utils.notifier.logger")
+    @patch("src.utils.notifier._teleporter.send_with_retry", new_callable=AsyncMock)
+    def test_send_telegram_alert_missing_credentials(self, mock_send, mock_logger, mock_getenv, _mock_exists):
+        """Test notifier warns and skips when credentials missing."""
+        def getenv_side_effect(key, default=None):
+            return None
+        mock_getenv.side_effect = getenv_side_effect
+
+        async def run_test():
+            await send_telegram_alert("Hello")
+
+        asyncio.run(run_test())
+
+        mock_logger.warning.assert_called_with("🚫 Telegram credentials missing. Skipping alert.")
+        mock_send.assert_not_called()
+
+
+class TestNotifyProgress:
+    """Tests for the notify_progress CLI script."""
+
+    @patch("scripts.utils.notify_progress.Teleporter.send_with_retry", new_callable=AsyncMock)
+    @patch("scripts.utils.notify_progress.ReportBuilder.build_mission_update")
+    def test_notify_progress_uses_mission_update(self, mock_build, mock_send):
+        """Ensure notify_progress uses Mission Update format and sends via Teleporter."""
+        mock_build.return_value = "formatted message"
+        mock_send.return_value = True
+
+        import scripts.utils.notify_progress as notify_progress
+
+        argv = [
+            "notify_progress.py",
+            "--task", "Task-123",
+            "--agent", "QA",
+            "--status", "SUCCESS",
+            "--problem", "Issue",
+            "--solution", "Fix",
+            "--next", "Next steps",
+            "--report", "Report body",
+        ]
+
+        with patch("sys.argv", argv):
+            asyncio.run(notify_progress.main())
+
+        mock_build.assert_called_once_with(
+            task="Task-123",
+            agent="QA",
+            status="SUCCESS",
+            problem="Issue",
+            solution="Fix",
+            next_steps="Next steps",
+            report="Report body",
+        )
+        mock_send.assert_called_once_with("formatted message")
 
 
 # Integration test to verify both modules work together

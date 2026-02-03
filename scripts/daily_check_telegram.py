@@ -5,11 +5,16 @@ import subprocess
 import os
 import sys
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add project to path
 sys.path.insert(0, '/Users/Jacob/clawd')
 
 from src.utils.notifier import send_telegram_alert
+from src.utils.reporter import ReportBuilder
 
 
 def run_daily_check():
@@ -39,7 +44,11 @@ def run_daily_check():
     
     async def notify():
         try:
-            await send_telegram_alert(report)
+            formatted_report = ReportBuilder.build_ai_brief(
+                headline="Daily Project Health Check",
+                system_audit=report,
+            )
+            await send_telegram_alert(formatted_report)
             print("✅ Report sent to Telegram")
         except Exception as e:
             print(f"❌ Failed to send Telegram: {e}")

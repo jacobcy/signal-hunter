@@ -28,7 +28,7 @@ async def main():
     parser = argparse.ArgumentParser(description="Send progress notifications to Telegram.")
     parser.add_argument("--task", required=True, help="Task ID or Name")
     parser.add_argument("--agent", required=True, help="Agent Role Name")
-    parser.add_argument("--status", required=True, choices=['SUCCESS', 'FAILED'], help="Status of the task")
+    parser.add_argument("--status", required=True, choices=['SUCCESS', 'FAILED', 'SIGNAL'], help="Status of the task")
     parser.add_argument("--problem", help="Problem encountered")
     parser.add_argument("--solution", help="Solution applied")
     parser.add_argument("--next", dest='next_steps', help="Next steps planned")
@@ -36,16 +36,22 @@ async def main():
 
     args = parser.parse_args()
 
-    # Build the report using the ReportBuilder
-    formatted_message = ReportBuilder.build_mission_update(
-        task=args.task,
-        agent=args.agent,
-        status=args.status,
-        problem=args.problem,
-        solution=args.solution,
-        next_steps=args.next_steps,
-        report=args.report
-    )
+    # Build the report
+    if args.status == 'SIGNAL':
+        # For signals, we send the report exactly as provided (no wrapper)
+        # unless it's empty, in which case we might default to something
+        formatted_message = args.report if args.report else "🚦 SIGNAL DETECTED (No details provided)"
+    else:
+        # Use the ReportBuilder for standard mission updates
+        formatted_message = ReportBuilder.build_mission_update(
+            task=args.task,
+            agent=args.agent,
+            status=args.status,
+            problem=args.problem,
+            solution=args.solution,
+            next_steps=args.next_steps,
+            report=args.report
+        )
 
     # Send the message using the Teleporter
     teleporter = Teleporter()

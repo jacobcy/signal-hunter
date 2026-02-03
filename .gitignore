@@ -11,6 +11,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
+*.egg-info/
 .venv/
 env/
 venv/
@@ -44,6 +45,7 @@ dry_run_output.json
 # Local agent memory/artifacts
 memory/
 agents/ops-daemon/
+projects/
 
 # Debug
 debug_*.py

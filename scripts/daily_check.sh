@@ -48,7 +48,8 @@ source .venv/bin/activate 2>/dev/null || true
 
 # Ruff check
 echo "  Running Ruff linter..." >> "$REPORT_FILE"
-RUFF_ERRORS=$(ruff check src/ 2>/dev/null | wc -l || echo "0")
+RUFF_ERRORS=$(ruff check src/ 2>/dev/null | wc -l || true)
+RUFF_ERRORS=${RUFF_ERRORS:-0}
 if [ "$RUFF_ERRORS" -gt 0 ]; then
     echo "  ⚠️ Ruff found $RUFF_ERRORS issues" >> "$REPORT_FILE"
     ruff check src/ 2>/dev/null | head -3 >> "$REPORT_FILE"
@@ -58,7 +59,8 @@ fi
 
 # MyPy check
 echo "  Running MyPy type checker..." >> "$REPORT_FILE"
-MYPY_ERRORS=$(mypy --ignore-missing-imports src/ 2>/dev/null | grep -c "error:" || echo "0")
+MYPY_ERRORS=$(mypy --ignore-missing-imports src/ 2>/dev/null | grep -c "error:" || true)
+MYPY_ERRORS=${MYPY_ERRORS:-0}
 if [ "$MYPY_ERRORS" -gt 0 ]; then
     echo "  ⚠️ MyPy found $MYPY_ERRORS type errors" >> "$REPORT_FILE"
     mypy src/ --ignore-missing-imports 2>/dev/null | grep "error:" | head -3 >> "$REPORT_FILE"

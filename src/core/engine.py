@@ -8,6 +8,7 @@ from src.core.processor import SignalProcessor
 from src.core.database import Database
 from src.core.diversity_analyzer import DiversityAnalyzer
 from src.utils.notifier import send_telegram_alert
+from src.utils.reporter import ReportBuilder
 
 class Engine:
     def __init__(self):
@@ -201,34 +202,38 @@ class Engine:
     async def _send_extreme_consensus_alert(self, ticker: str, signals: List[Signal], metrics: DiversityMetrics):
         """Alert when >80% consensus - reversal warning."""
         majority = "BULLISH" if metrics.bullish_count > metrics.bearish_count else "BEARISH"
-        
-        msg = f"🚨 *EXTREME CONSENSUS RISK: {ticker}*\n"
-        msg += f"⚠️ {metrics.consensus_ratio*100:.0f}% {majority} - Reversal Likely!\n"
-        msg += "-------------------\n"
-        msg += f"📊 Diversity Score: {metrics.diversity_score:.2f} (Extreme)\n"
-        msg += f"🎯 Signals: {metrics.total_signals} total\n"
-        msg += f"   🟢 Bullish: {metrics.bullish_count}\n"
-        msg += f"   🔴 Bearish: {metrics.bearish_count}\n"
-        msg += "-------------------\n"
-        msg += "💡 *Insight*: When everyone agrees, everyone is wrong.\n"
-        msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        
+
+        reason_lines = [
+            f"{metrics.consensus_ratio*100:.0f}% {majority} - Reversal Likely!",
+            f"Diversity Score: {metrics.diversity_score:.2f} (Extreme)",
+            f"Signals: {metrics.total_signals} total (Bullish {metrics.bullish_count}, Bearish {metrics.bearish_count})",
+            "Insight: When everyone agrees, everyone is wrong.",
+            f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        ]
+        msg = ReportBuilder.build_market_signal(
+            signal=f"EXTREME CONSENSUS RISK: {ticker}",
+            reason="\n".join(reason_lines),
+        )
+
         await send_telegram_alert(msg)
         logger.warning(f"🚨 Extreme consensus alert sent for {ticker}")
     
     async def _send_echo_chamber_alert(self, ticker: str, signals: List[Signal], metrics: DiversityMetrics):
         """Alert for echo chamber detection."""
         majority = "BULLISH" if metrics.bullish_count > metrics.bearish_count else "BEARISH"
-        
-        msg = f"📢 *ECHO CHAMBER WARNING: {ticker}*\n"
-        msg += f"⚠️ Herd mentality detected ({metrics.consensus_ratio*100:.0f}% {majority})\n"
-        msg += "-------------------\n"
-        msg += f"📊 Diversity Score: {metrics.diversity_score:.2f} (Low)\n"
-        msg += f"🎯 Sources agree too much - limited perspective\n"
-        msg += "-------------------\n"
-        msg += "💡 *Insight*: Diversify your information diet.\n"
-        msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        
+
+        reason_lines = [
+            f"Herd mentality detected ({metrics.consensus_ratio*100:.0f}% {majority})",
+            f"Diversity Score: {metrics.diversity_score:.2f} (Low)",
+            "Sources agree too much - limited perspective",
+            "Insight: Diversify your information diet.",
+            f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        ]
+        msg = ReportBuilder.build_market_signal(
+            signal=f"ECHO CHAMBER WARNING: {ticker}",
+            reason="\n".join(reason_lines),
+        )
+
         await send_telegram_alert(msg)
         logger.warning(f"📢 Echo chamber alert sent for {ticker}")
     
@@ -242,47 +247,59 @@ class Engine:
             minority_type = "BEARISH"
             minority_signals = [s for s in signals if s.signal_type.value == "BEARISH"]
         
-        msg = f"🎯 *CONTRARIAN OPPORTUNITY: {ticker}*\n"
-        msg += f"💎 Strong {minority_type} view in {metrics.consensus_ratio*100:.0f}% opposite market\n"
-        msg += "-------------------\n"
-        msg += f"📊 Contrarian Index: {metrics.contrarian_index:.2f}\n"
-        msg += f"🎯 Minority View:\n"
-        for s in minority_signals[:2]:
-            msg += f"   • {s.source_name}: {s.raw_text[:40]}...\n"
-        msg += "-------------------\n"
-        msg += "💡 *Insight*: The crowd is wrong at extremes.\n"
-        msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        
+        reason_lines = [
+            f"Strong {minority_type} view in {metrics.consensus_ratio*100:.0f}% opposite market",
+            f"Contrarian Index: {metrics.contrarian_index:.2f}",
+            "Insight: The crowd is wrong at extremes.",
+            f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        ]
+        audit_lines = [f"• {s.source_name}: {s.raw_text[:60]}..." for s in minority_signals[:2]]
+        audit = "\n".join(audit_lines) if audit_lines else None
+        msg = ReportBuilder.build_market_signal(
+            signal=f"CONTRARIAN OPPORTUNITY: {ticker}",
+            reason="\n".join(reason_lines),
+            audit=audit,
+        )
+
         await send_telegram_alert(msg)
         logger.info(f"🎯 Contrarian alert sent for {ticker}")
     
     async def _send_divergence_alert(self, ticker: str, signals: List[Signal], metrics: DiversityMetrics):
         """Alert for cross-platform sentiment divergence."""
-        msg = f"📊 *PLATFORM DIVERGENCE: {ticker}*\n"
-        msg += "⚠️ Different platforms show different sentiments\n"
-        msg += "-------------------\n"
-        msg += f"🎯 Mainstream: {metrics.mainstream_sentiment.value if metrics.mainstream_sentiment else 'N/A'}\n"
-        msg += f"🎯 Contrarian: {metrics.contrarian_sentiment.value if metrics.contrarian_sentiment else 'N/A'}\n"
-        msg += "-------------------\n"
-        msg += "💡 *Insight*: Smart money vs retail divergence.\n"
-        msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        
+        reason_lines = [
+            "Different platforms show different sentiments",
+            f"Mainstream: {metrics.mainstream_sentiment.value if metrics.mainstream_sentiment else 'N/A'}",
+            f"Contrarian: {metrics.contrarian_sentiment.value if metrics.contrarian_sentiment else 'N/A'}",
+            "Insight: Smart money vs retail divergence.",
+            f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        ]
+        msg = ReportBuilder.build_market_signal(
+            signal=f"PLATFORM DIVERGENCE: {ticker}",
+            reason="\n".join(reason_lines),
+        )
+
         await send_telegram_alert(msg)
         logger.info(f"📊 Divergence alert sent for {ticker}")
     
     async def _send_healthy_resonance_alert(self, ticker: str, signals: List[Signal], metrics: DiversityMetrics):
         """Alert for healthy resonance (diverse sources agreeing)."""
-        msg = f"✅ *HEALTHY RESONANCE: {ticker}*\n"
-        msg += f"📊 Diverse sources reaching consensus\n"
-        msg += "-------------------\n"
-        msg += f"🎯 Diversity Score: {metrics.diversity_score:.2f} (Good)\n"
-        msg += f"📈 Consensus: {metrics.consensus_ratio*100:.0f}%\n"
+        reason_lines = [
+            "Diverse sources reaching consensus",
+            f"Diversity Score: {metrics.diversity_score:.2f} (Good)",
+            f"Consensus: {metrics.consensus_ratio*100:.0f}%",
+            f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        ]
+        audit_lines = []
         for s in signals[:3]:
             icon = "🟢" if s.signal_type.value == "BULLISH" else "🔴" if s.signal_type.value == "BEARISH" else "⚪️"
-            msg += f"{icon} {s.source_name}\n"
-        msg += "-------------------\n"
-        msg += f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        
+            audit_lines.append(f"{icon} {s.source_name}")
+        audit = "\n".join(audit_lines) if audit_lines else None
+        msg = ReportBuilder.build_market_signal(
+            signal=f"HEALTHY RESONANCE: {ticker}",
+            reason="\n".join(reason_lines),
+            audit=audit,
+        )
+
         await send_telegram_alert(msg)
         logger.info(f"✅ Healthy resonance alert sent for {ticker}")
     
@@ -304,10 +321,15 @@ class Engine:
             
             sources_involved = set(s.source_name for s in sigs)
             if len(sources_involved) >= 2:
-                msg = f"🚨 *信号共振: {ticker}*\n"
+                audit_lines = []
                 for s in sigs[:3]:
                     icon = "🟢" if s.signal_type.value == "BULLISH" else "🔴"
-                    msg += f"{icon} {s.source_name}\n"
+                    audit_lines.append(f"{icon} {s.source_name}")
+                msg = ReportBuilder.build_market_signal(
+                    signal=f"信号共振: {ticker}",
+                    reason="Legacy resonance check triggered with multiple sources.",
+                    audit="\n".join(audit_lines),
+                )
                 await send_telegram_alert(msg)
                 await db.record_alert(ticker)
                 alerts_sent += 1
